@@ -24,6 +24,7 @@ unsigned int      fmod_version;
 
 enum MenuItem {
 	OPEN_MUSIC_FILE,
+	PAUSE_MUSIC,
 	STOP_MUSIC,
 	EXIT,
 	NO_ACTION
@@ -34,10 +35,12 @@ void reshapeFunc(int w, int h);
 void addMenuEntry(void);
 void selectMenuFunc(int entryID);
 char* getMusicFilePath(void);
+void FMOD_init();
 void FMOD_ERRCHECK(FMOD_RESULT result);
 void FMOD_playSound(char* filePath);
-void FMOD_releaseSound();
+void FMOD_stopMusic();
 void FMOD_shutdownSystem();
+void FMOD_pausedMusic();
 
 int main(int argc, char* argv[]) {
 	glutInit(&argc, argv);
@@ -53,6 +56,8 @@ int main(int argc, char* argv[]) {
 	addMenuEntry();
 	gMenuChoice = NO_ACTION;
 
+	FMOD_init();
+
 	glutMainLoop();
 
 	return EXIT_SUCCESS;
@@ -60,6 +65,7 @@ int main(int argc, char* argv[]) {
 
 void addMenuEntry(void) {
 	glutAddMenuEntry("À½¾ÇÆÄÀÏ¿­±â", OPEN_MUSIC_FILE);
+	glutAddMenuEntry("À½¾Ç ÀÏ½ÃÁ¤Áö", PAUSE_MUSIC);
 	glutAddMenuEntry("À½¾Ç Á¤Áö", STOP_MUSIC);
 	glutAddMenuEntry("Exit", EXIT);
 	glutAttachMenu(GLUT_RIGHT_BUTTON);
@@ -70,12 +76,16 @@ void selectMenuFunc(int entryID) {
 
 	switch (gMenuChoice) {
 	case OPEN_MUSIC_FILE:
+		FMOD_stopMusic();
 		FMOD_playSound(getMusicFilePath());
 		break;
+	case PAUSE_MUSIC:
+		FMOD_pausedMusic();
+		break;
 	case STOP_MUSIC:
-		FMOD_releaseSound();
+		FMOD_stopMusic();
+		break;
 	case EXIT:
-		FMOD_releaseSound();
 		FMOD_shutdownSystem();
 		exit(EXIT_SUCCESS);
 		break;
@@ -121,13 +131,7 @@ char* getMusicFilePath(void) {
 	return filePath;
 }
 
-void FMOD_ERRCHECK(FMOD_RESULT result) {
-	if (result != FMOD_OK) {
-		printf("fmod error\n");
-	}
-}
-
-void FMOD_playSound(char* filePath) {
+void FMOD_init() {
 	/*
 	Create a System object and initialize.
 	*/
@@ -137,14 +141,21 @@ void FMOD_playSound(char* filePath) {
 	gFmodResult = gFmodSystem->getVersion(&fmod_version);
 	FMOD_ERRCHECK(gFmodResult);
 
-	if (fmod_version < FMOD_VERSION)
-	{
+	if (fmod_version < FMOD_VERSION) {
 		printf("FMOD lib fmod_version %08x doesn't match header fmod_version %08x", fmod_version, FMOD_VERSION);
 	}
 
 	gFmodResult = gFmodSystem->init(32, FMOD_INIT_NORMAL, NULL);
 	FMOD_ERRCHECK(gFmodResult);
+}
 
+void FMOD_ERRCHECK(FMOD_RESULT result) {
+	if (result != FMOD_OK) {
+		printf("fmod error\n");
+	}
+}
+
+void FMOD_playSound(char* filePath) {
 	gFmodResult = gFmodSystem->createStream(filePath, FMOD_LOOP_NORMAL | FMOD_2D, 0, &gFmodSound);
 	FMOD_ERRCHECK(gFmodResult);
 
@@ -155,17 +166,27 @@ void FMOD_playSound(char* filePath) {
 	FMOD_ERRCHECK(gFmodResult);
 }
 
-void FMOD_releaseSound() {
+void FMOD_stopMusic() {
+	gFmodResult = gFmodChannel->stop();
+	FMOD_ERRCHECK(gFmodResult);
+}
+
+void FMOD_shutdownSystem() {
 	/*
 	Shut down
 	*/
 	gFmodResult = gFmodSound->release();  /* Release the parent, not the sound that was retrieved with getSubSound. */
 	FMOD_ERRCHECK(gFmodResult);
-}
-
-void FMOD_shutdownSystem() {
 	gFmodResult = gFmodSystem->close();
 	FMOD_ERRCHECK(gFmodResult);
 	gFmodResult = gFmodSystem->release();
+	FMOD_ERRCHECK(gFmodResult);
+}
+
+void FMOD_pausedMusic() {
+	bool paused;
+	gFmodResult = gFmodChannel->getPaused(&paused);
+	FMOD_ERRCHECK(gFmodResult);
+	gFmodResult = gFmodChannel->setPaused(!paused);
 	FMOD_ERRCHECK(gFmodResult);
 }
