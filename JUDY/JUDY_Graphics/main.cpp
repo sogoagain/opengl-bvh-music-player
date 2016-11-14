@@ -29,19 +29,17 @@ enum MenuItem {
 	NO_ACTION
 };
 
-
 void displayFunc(void);
 void reshapeFunc(int w, int h);
 void addMenuEntry(void);
 void selectMenuFunc(int entryID);
-const char* getMusicFilePath(void);
-void FMOD_ERRCHECK(FMOD_RESULT gFmodResult);
-void FMOD_playSound(const char* filePath);
+char* getMusicFilePath(void);
+void FMOD_ERRCHECK(FMOD_RESULT result);
+void FMOD_playSound(char* filePath);
 void FMOD_releaseSound();
 void FMOD_shutdownSystem();
 
 int main(int argc, char* argv[]) {
-
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
 	glutInitWindowSize(gWidth, gHeight);
@@ -102,30 +100,25 @@ void reshapeFunc(int w, int h) {
 	gHeight = h;
 }
 
-const char* getMusicFilePath(void) {
-	char *filePath = (char *)calloc(256, sizeof(char));
+char* getMusicFilePath(void) {
+	char* filePath = (char*)calloc(MAX_PATH, sizeof(char));
 
 	OpenFileDialog* fileDialog = new OpenFileDialog();
 	fileDialog->InitialDir = _T("C:\\Users\\");
 	fileDialog->Title = _T("Open Music File");
 
-	// 파일 경로 복사 TCHAR*, char* 조사 필요
-	// _tcscpy_s(arrFilePath, fileDialog->FileName);
-	// strcat(filePath, fileDialog->FileName);
-	WideCharToMultiByte(CP_ACP, 0, fileDialog->FileName, 256, filePath, 256, NULL, NULL);
-
-#ifdef DEBUG
 	if (fileDialog->ShowDialog()) {
+		int len = WideCharToMultiByte(CP_ACP, 0, fileDialog->FileName, -1, NULL, 0, NULL, NULL);
+		WideCharToMultiByte(CP_ACP, 0, fileDialog->FileName, -1, filePath, len, NULL, NULL);
+#ifdef DEBUG	
 		MessageBox(0, fileDialog->FileName, _T("선택된 음악 파일"),
 			MB_OK | MB_ICONINFORMATION);
+		printf("선택된 음악 파일: %s\n", filePath);
+#endif	
 	}
 
-	printf("선택된 음악 파일: %s\n", filePath);
-#endif
-
 	delete fileDialog;
-	//return filePath;
-	return "test.mp3";
+	return filePath;
 }
 
 void FMOD_ERRCHECK(FMOD_RESULT result) {
@@ -134,7 +127,7 @@ void FMOD_ERRCHECK(FMOD_RESULT result) {
 	}
 }
 
-void FMOD_playSound(const char* filePath) {
+void FMOD_playSound(char* filePath) {
 	/*
 	Create a System object and initialize.
 	*/
