@@ -10,7 +10,7 @@
 using namespace FMOD;
 
 MusicPlayer *musicPlayer;
-int	gWidth = 300, gHeight = 300;
+int	gWidth = 600, gHeight = 600;
 int	gMenuChoice;
 
 enum MenuItem {
@@ -26,7 +26,8 @@ void reshapeFunc(int, int);
 void idleFunc(void);
 void addMenuEntry(void);
 void selectMenuFunc(int);
-void renderBitmapCharacter(float, float, float, void*);
+void renderBitmapCharacter(float, float, float, void*, char*);
+void keyboardFunc(unsigned char, int, int);
 
 int main(int argc, char* argv[]) {
 	glutInit(&argc, argv);
@@ -38,13 +39,14 @@ int main(int argc, char* argv[]) {
 	glutDisplayFunc(displayFunc);
 	glutReshapeFunc(reshapeFunc);
 	glutIdleFunc(idleFunc);
+	glutKeyboardFunc(keyboardFunc);
 
 	GLint MyMainMenuID = glutCreateMenu(selectMenuFunc);
 	addMenuEntry();
 	gMenuChoice = NO_ACTION;
 
 	musicPlayer = new MusicPlayer();
-	musicPlayer->FMOD_init();
+	musicPlayer->init();
 
 	glutMainLoop();
 
@@ -53,7 +55,7 @@ int main(int argc, char* argv[]) {
 }
 
 void idleFunc(void) {
-	musicPlayer->FMOD_update();
+	musicPlayer->updateSystem();
 	glutPostRedisplay();
 }
 
@@ -73,10 +75,10 @@ void selectMenuFunc(int entryID) {
 		musicPlayer->openMusic();
 		break;
 	case PAUSE_MUSIC:
-		musicPlayer->FMOD_pausedMusic();
+		musicPlayer->pausedMusic();
 		break;
 	case STOP_MUSIC:
-		musicPlayer->FMOD_stopMusic();
+		musicPlayer->stopMusic();
 		break;
 	case EXIT:
 		delete(musicPlayer);
@@ -90,11 +92,10 @@ void selectMenuFunc(int entryID) {
 void displayFunc(void) {
 	glClear(GL_COLOR_BUFFER_BIT);
 	glColor3ub(255, 255, 255);
-
-	glViewport(0, 0, gWidth, gHeight); {
-		renderBitmapCharacter(-0.9, 0.9, 0, GLUT_BITMAP_HELVETICA_18);
+		renderBitmapCharacter(-0.95, 0.9, 0, GLUT_BITMAP_TIMES_ROMAN_24, musicPlayer->getTitle());
+		renderBitmapCharacter(-0.95, 0.83, 0, GLUT_BITMAP_HELVETICA_18, musicPlayer->getArtist());
+		renderBitmapCharacter(-0.95, 0.7, 0, GLUT_BITMAP_HELVETICA_18, musicPlayer->getStrMusicState());
 		glutWireCube(0.3);
-	}
 
 	glFlush();
 }
@@ -104,11 +105,30 @@ void reshapeFunc(int w, int h) {
 	gHeight = h;
 }
 
-void renderBitmapCharacter(float x, float y, float z, void *font) {
+void keyboardFunc(unsigned char uChKeyPressed, int x, int y) {
+	switch (uChKeyPressed) {
+	case 'U': case 'u':
+		musicPlayer->increaseVolume(true);
+		break;
+	case 'D': case'd':
+		musicPlayer->increaseVolume(false);
+		break;
+	case 'Q': case 'q':
+		delete(musicPlayer);
+		exit(EXIT_SUCCESS);
+		break;
+	default:
+		break;
+	}
+
+	glutPostRedisplay();
+}
+
+void renderBitmapCharacter(float x, float y, float z, void *font, char* strDisplay) {
 	char strOutput[128] = { '\0', };
 	int i = 0;
-	musicPlayer->FMOD_getNowState();
-	strcpy_s(strOutput, musicPlayer->musicState);
+
+	strcpy_s(strOutput, strDisplay);
 	glRasterPos3f(x, y, z);
 	for (i = 0; strOutput[i] != '\0'; i++)
 		glutBitmapCharacter(font, strOutput[i]);

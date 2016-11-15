@@ -9,27 +9,42 @@
 
 class MusicPlayer {
 
-public:
-	FMOD::System	*fmodSystem;
-	FMOD::Sound		*fmodSound;
-	FMOD::Channel	*fmodChannel;
-	FMOD_RESULT		fmodResult;
-	unsigned int	fmod_version;
-	char			*mStrFilePath;
-	char			musicState[128];
+private:
+	FMOD::System	*mFmodSystem;
+	FMOD::Sound		*mFmodSound;
+	FMOD::Channel	*mFmodChannel;
+	FMOD_RESULT		mFmodResult;
+	unsigned int	mFmodVersion;
+	FMOD_TAG		mFmodTag;
 
+	float			mFVolume;
+	char			*mStrFilePath;
+	char			mStrMusicState[128];
+	char			mStrTitle[128];
+	char			mStrArtist[128];
+	char			mStrAlbum[128];
+	char			mStrGenre[64];
+
+	void errorCheck(FMOD_RESULT result);
+	void playSound(void);
+	void shutdownSystem(void);
+	void setVolume(void);
+	void readMusicTag(void);
+
+public:
 	MusicPlayer(void);
 	~MusicPlayer(void);
 
-	void FMOD_init(void);
-	void FMOD_ERRCHECK(FMOD_RESULT result);
-	void FMOD_update(void);
-	void FMOD_playSound(void);
-
-	void FMOD_stopMusic(void);
-	void FMOD_shutdownSystem(void);
-	void FMOD_pausedMusic(void);
-	void FMOD_getNowState(void);
-
+	void init(void);	
+	void updateSystem(void);
+	void stopMusic(void);
+	void pausedMusic(void);
+	void increaseVolume(bool);
+	char* getStrMusicState(void);
 	void openMusic(void);
+
+	char* getTitle(void);
+	char* getArtist(void);
+	char* getAlbum(void);
+	char* getGenre(void);
 };
