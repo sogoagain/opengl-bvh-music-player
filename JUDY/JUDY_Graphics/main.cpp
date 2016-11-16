@@ -153,8 +153,12 @@ void displayFunc(void) {
 	glTranslatef(0.0, -0.5, 0.0);
 
 	float  light0_position[] = { 10.0, 10.0, 10.0, 1.0 };
+	//float	light_color[] = { 0.5, 0.5, 0.5 };
+	//glLightModelfv(GL_LIGHT_MODEL_AMBIENT, light_color);
 	glLightfv(GL_LIGHT0, GL_POSITION, light0_position);
 
+	// 배경
+	/*
 	float  size = 1.5f;
 	int  num_x = 10, num_z = 10;
 	double  ox, oz;
@@ -177,10 +181,16 @@ void displayFunc(void) {
 		}
 	}
 	glEnd();
+	*/
 
+	// 모델
+	
 	glColor3f(1.0f, 0.0f, 0.0f);
 	if (bvh)
 		bvh->RenderFigure(frame_no, 0.02f);
+	
+
+	// 문자열
 
 	char  message[64];
 	if (bvh)
@@ -434,7 +444,7 @@ void  drawMessage(int line_no, const char * message)
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_LIGHTING);
 
-	glColor3f(1.0, 0.0, 0.0);
+	glColor3ub(0, 0, 0);
 	glRasterPos2i(8, 24 + 18 * line_no);
 	for (i = 0; message[i] != '\0'; i++)
 		glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, message[i]);
