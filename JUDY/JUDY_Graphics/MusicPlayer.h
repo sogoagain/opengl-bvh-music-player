@@ -35,7 +35,7 @@ public:
 	MusicPlayer(void);
 	~MusicPlayer(void);
 
-	void init(void);	
+	void init(void);
 	void updateSystem(void);
 	void stopMusic(void);
 	void pausedMusic(void);

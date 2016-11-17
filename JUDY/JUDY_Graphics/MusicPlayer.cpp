@@ -95,7 +95,7 @@ void MusicPlayer::readMusicTag(void) {
 	strcpy_s(mStrGenre, (char*)mFmodTag.data);
 
 	printf("TITLE: %s\n", mStrTitle);
-	printf("ARTIST: %s\n",mStrArtist);
+	printf("ARTIST: %s\n", mStrArtist);
 	printf("ALBUM: %s\n", mStrAlbum);
 	printf("GENRE: %s\n", mStrGenre);
 }
@@ -182,7 +182,7 @@ char* MusicPlayer::getStrMusicState(void) {
 			errorCheck(mFmodResult);
 	}
 
-	sprintf_s(mStrMusicState, "Time %02d:%02d:%02d/%02d:%02d:%02d : %s Volume:%02.0f", ms / 1000 / 60, ms / 1000 % 60, ms / 10 % 100, lenms / 1000 / 60, lenms / 1000 % 60, lenms / 10 % 100, paused ? "Paused " : playing ? "Playing" : "Stopped", 100*mFVolume);
+	sprintf_s(mStrMusicState, "Time %02d:%02d:%02d/%02d:%02d:%02d : %s Volume:%02.0f", ms / 1000 / 60, ms / 1000 % 60, ms / 10 % 100, lenms / 1000 / 60, lenms / 1000 % 60, lenms / 10 % 100, paused ? "Paused " : playing ? "Playing" : "Stopped", 100 * mFVolume);
 	return mStrMusicState;
 }
 

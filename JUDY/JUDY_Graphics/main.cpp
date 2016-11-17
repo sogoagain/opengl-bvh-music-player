@@ -11,49 +11,58 @@
 
 using namespace FMOD;
 
-MusicPlayer	*musicPlayer;
-int			gWidth = 640, gHeight = 640;
-int			gMenuChoice;
-int			gBPM = 100;
-
-/************/
-static float   camera_yaw = 0.0f;
-static float   camera_pitch = -20.0f;
-static float   camera_distance = 5.0f;
-
-static int     drag_mouse_r = 0;
-static int     drag_mouse_l = 0;
-static int     drag_mouse_m = 0;
-static int     last_mouse_x, last_mouse_y;
-static int     win_width, win_height;
-
-bool   on_animation = true;
-float  animation_time = 0.0f;
-int    frame_no = 0;
-
-BVH *   bvh = NULL;
-/************/
-
 enum MenuItem {
 	OPEN_MUSIC_FILE,
 	PAUSE_MUSIC,
 	STOP_MUSIC,
+	SCALE,
+	ROTATE,
 	EXIT,
 	NO_ACTION
 };
 
+MusicPlayer		*gPtrMusicPlayer;
+int				gWidth = 640, gHeight = 640;
+int				gMenuChoice;
+int				gBPM = 100;
+
+/*************BVH 관련 변수****************/
+static float	gFCameraYaw = 0.0f;
+static float	gFCameraPitch = -20.0f;
+static float	gFCameraDistance = 5.0f;
+
+int		gMouseMode;
+static int		gDragMouseR = 0;
+static int		gDragMouseL = 0;
+static int		gMouseX, gMouseY;
+
+bool			gOnAnimation = true;
+float			gFAnimationTime = 0.0f;
+int				gFrameNo = 0;
+
+BVH				*gPtrBvh = NULL;
+/****************************************/
+
+/*콜백함수*/
+void selectMainMenu(int);
+void addMainMenu(void);
+void addMusicMenu(void);
+void selectMusicMenu(int);
+void addControlMenu(void);
+void selectControlMenu(int);
+
 void displayFunc(void);
 void reshapeFunc(int, int);
 void idleFunc(void);
-void addMenuEntry(void);
-void selectMenuFunc(int);
+
 void mouseClickFunc(int, int, int, int);
 void mouseMotionFunc(int, int);
 void keyboardFunc(unsigned char, int, int);
-void renderBitmapCharacter(float, float, float, void*, char*);
-int calculateBPM(DWORD triggerTime[]);
-void  initEnvironment(void);
-void  drawMessage(int, const char*);
+/*********/
+
+int	 calculateBPM(DWORD triggerTime[]);
+void initEnvironment(void);
+void drawMessage(int, const char*);
 
 int main(int argc, char* argv[]) {
 	glutInit(&argc, argv);
@@ -69,26 +78,28 @@ int main(int argc, char* argv[]) {
 	glutMouseFunc(mouseClickFunc);
 	glutMotionFunc(mouseMotionFunc);
 
-	GLint MyMainMenuID = glutCreateMenu(selectMenuFunc);
-	addMenuEntry();
-	gMenuChoice = NO_ACTION;
-
-	musicPlayer = new MusicPlayer();
-	musicPlayer->init();
+	GLint musicMenuID = glutCreateMenu(selectMusicMenu);
+	addMusicMenu();
+	GLint controlMenuID = glutCreateMenu(selectControlMenu);
+	addControlMenu();
+	GLint mainMenuID = glutCreateMenu(selectMainMenu);
+	glutAddSubMenu("음악", musicMenuID);
+	glutAddSubMenu("화면제어", controlMenuID);
+	addMainMenu();
+	glutAttachMenu(GLUT_RIGHT_BUTTON);
 
 	initEnvironment();
-
 	glutMainLoop();
 
-	delete(musicPlayer);
+	delete(gPtrMusicPlayer);
+	delete(gPtrBvh);
 	return EXIT_SUCCESS;
 }
 
 void idleFunc(void) {
-	musicPlayer->updateSystem();
+	gPtrMusicPlayer->updateSystem();
 
-	if (on_animation)
-	{
+	if (gOnAnimation) {
 #ifdef  WIN32
 		static DWORD  last_time = 0;
 		DWORD  curr_time = timeGetTime();
@@ -96,46 +107,76 @@ void idleFunc(void) {
 		if (delta > 0.03f)
 			delta = 0.03f;
 		last_time = curr_time;
-		animation_time += delta;
+		gFAnimationTime += delta;
 #else
-		animation_time += 0.03f;
+		gFAnimationTime += 0.03f;
 #endif
-		if (bvh)
-		{
-			frame_no = animation_time / bvh->GetInterval();
-			frame_no = frame_no % bvh->GetNumFrame();
+		if (gPtrBvh) {
+			gFrameNo = gFAnimationTime / gPtrBvh->GetInterval();
+			gFrameNo = gFrameNo % gPtrBvh->GetNumFrame();
 		}
 		else
-			frame_no = 0;
+			gFrameNo = 0;
 
 		glutPostRedisplay();
 	}
 }
 
-void addMenuEntry(void) {
-	glutAddMenuEntry("음악파일열기", OPEN_MUSIC_FILE);
-	glutAddMenuEntry("음악 일시정지", PAUSE_MUSIC);
-	glutAddMenuEntry("음악 정지", STOP_MUSIC);
-	glutAddMenuEntry("Exit", EXIT);
-	glutAttachMenu(GLUT_RIGHT_BUTTON);
+void addMainMenu(void) {
+	glutAddMenuEntry("프로그램 종료", EXIT);
 }
 
-void selectMenuFunc(int entryID) {
-	gMenuChoice = entryID;
+void addMusicMenu(void) {
+	glutAddMenuEntry("파일열기", OPEN_MUSIC_FILE);
+	glutAddMenuEntry("일시정지", PAUSE_MUSIC);
+	glutAddMenuEntry("정지/재생", STOP_MUSIC);
+}
 
-	switch (gMenuChoice) {
+void addControlMenu(void) {
+	glutAddMenuEntry("확대/축소", SCALE);
+	glutAddMenuEntry("회전", ROTATE);
+}
+
+void selectMainMenu(int entryID) {
+	switch (entryID) {
+	case EXIT:
+		delete(gPtrMusicPlayer);
+		delete(gPtrBvh);
+		exit(EXIT_SUCCESS);
+		break;
+	default:
+		break;
+	}
+}
+
+void selectMusicMenu(int entryID) {
+	switch (entryID) {
 	case OPEN_MUSIC_FILE:
-		musicPlayer->openMusic();
+		gPtrMusicPlayer->openMusic();
 		break;
 	case PAUSE_MUSIC:
-		musicPlayer->pausedMusic();
+		gPtrMusicPlayer->pausedMusic();
 		break;
 	case STOP_MUSIC:
-		musicPlayer->stopMusic();
+		gPtrMusicPlayer->stopMusic();
 		break;
 	case EXIT:
-		delete(musicPlayer);
+		delete(gPtrMusicPlayer);
+		delete(gPtrBvh);
 		exit(EXIT_SUCCESS);
+		break;
+	default:
+		break;
+	}
+}
+
+void selectControlMenu(int entryID) {
+	switch (entryID) {
+	case SCALE:
+		gMouseMode = SCALE;
+		break;
+	case ROTATE:
+		gMouseMode = ROTATE;
 		break;
 	default:
 		break;
@@ -147,9 +188,9 @@ void displayFunc(void) {
 
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	glTranslatef(0.0, 0.0, -camera_distance);
-	glRotatef(-camera_pitch, 1.0, 0.0, 0.0);
-	glRotatef(-camera_yaw, 0.0, 1.0, 0.0);
+	glTranslatef(0.0, 0.0, -gFCameraDistance);
+	glRotatef(-gFCameraPitch, 1.0, 0.0, 0.0);
+	glRotatef(-gFCameraYaw, 0.0, 1.0, 0.0);
 	glTranslatef(0.0, -0.5, 0.0);
 
 	float  light0_position[] = { 10.0, 10.0, 10.0, 1.0 };
@@ -158,7 +199,6 @@ void displayFunc(void) {
 	glLightfv(GL_LIGHT0, GL_POSITION, light0_position);
 
 	// 배경
-	/*
 	float  size = 1.5f;
 	int  num_x = 10, num_z = 10;
 	double  ox, oz;
@@ -181,30 +221,26 @@ void displayFunc(void) {
 		}
 	}
 	glEnd();
-	*/
+	
 
 	// 모델
-	
+
 	glColor3f(1.0f, 0.0f, 0.0f);
-	if (bvh)
-		bvh->RenderFigure(frame_no, 0.02f);
-	
+	if (gPtrBvh)
+		gPtrBvh->RenderFigure(gFrameNo, 0.04f);
+
 
 	// 문자열
-
 	char  message[64];
-	if (bvh)
-		sprintf_s(message, "%.2f (%d)", animation_time, frame_no);
+	if (gPtrBvh)
+		sprintf_s(message, "%.2f (%d)", gFAnimationTime, gFrameNo);
 	else
 		sprintf_s(message, "Press 'L' key to Load a BVH file");
 	drawMessage(0, message);
-	drawMessage(1, musicPlayer->getTitle());
-	drawMessage(2, musicPlayer->getArtist());
-	drawMessage(3, musicPlayer->getStrMusicState());
+	drawMessage(1, gPtrMusicPlayer->getTitle());
+	drawMessage(2, gPtrMusicPlayer->getArtist());
+	drawMessage(3, gPtrMusicPlayer->getStrMusicState());
 	glutSwapBuffers();
-
-
-
 	glFlush();
 }
 
@@ -215,57 +251,40 @@ void reshapeFunc(int w, int h) {
 	glLoadIdentity();
 	gluPerspective(45, (double)w / h, 1, 500);
 
-	win_width = w;
-	win_height = h;
+	gWidth = w;
+	gHeight = h;
 }
 
 void mouseClickFunc(int button, int state, int x, int y) {
-	if ((button == GLUT_LEFT_BUTTON) && (state == GLUT_DOWN))
-		drag_mouse_l = 1;
-	else if ((button == GLUT_LEFT_BUTTON) && (state == GLUT_UP))
-		drag_mouse_l = 0;
-
-	if ((button == GLUT_RIGHT_BUTTON) && (state == GLUT_DOWN))
-		drag_mouse_r = 1;
-	else if ((button == GLUT_RIGHT_BUTTON) && (state == GLUT_UP))
-		drag_mouse_r = 0;
-
-	if ((button == GLUT_MIDDLE_BUTTON) && (state == GLUT_DOWN))
-		drag_mouse_m = 1;
-	else if ((button == GLUT_MIDDLE_BUTTON) && (state == GLUT_UP))
-		drag_mouse_m = 0;
+	gMouseX = x;
+	gMouseY = y;
 
 	glutPostRedisplay();
-
-	last_mouse_x = x;
-	last_mouse_y = y;
 }
 
 void mouseMotionFunc(int x, int y) {
-	if (drag_mouse_r)
-	{
-		camera_yaw -= (x - last_mouse_x) * 1.0;
-		if (camera_yaw < 0.0)
-			camera_yaw += 360.0;
-		else if (camera_yaw > 360.0)
-			camera_yaw -= 360.0;
+	if (gMouseMode == ROTATE) {
+		gFCameraYaw -= (x - gMouseX) * 1.0;
+		if (gFCameraYaw < 0.0)
+			gFCameraYaw += 360.0;
+		else if (gFCameraYaw > 360.0)
+			gFCameraYaw -= 360.0;
 
-		camera_pitch -= (y - last_mouse_y) * 1.0;
-		if (camera_pitch < -90.0)
-			camera_pitch = -90.0;
-		else if (camera_pitch > 90.0)
-			camera_pitch = 90.0;
+		gFCameraPitch -= (y - gMouseY) * 1.0;
+		if (gFCameraPitch < -90.0)
+			gFCameraPitch = -90.0;
+		else if (gFCameraPitch > 90.0)
+			gFCameraPitch = 90.0;
 	}
 
-	if (drag_mouse_l)
-	{
-		camera_distance += (y - last_mouse_y) * 0.2;
-		if (camera_distance < 2.0)
-			camera_distance = 2.0;
+	if (gMouseMode == SCALE) {
+		gFCameraDistance += (y - gMouseY) * 0.2;
+		if (gFCameraDistance < 2.0)
+			gFCameraDistance = 2.0;
 	}
 
-	last_mouse_x = x;
-	last_mouse_y = y;
+	gMouseX = x;
+	gMouseY = y;
 
 	glutPostRedisplay();
 }
@@ -274,86 +293,36 @@ void keyboardFunc(unsigned char uChKeyPressed, int x, int y) {
 	static	int		triggerCnt = 0;
 	static	DWORD	triggerTime[NUM_OF_TRIGGER] = { 0, };
 
-	if (uChKeyPressed == 's')
-		on_animation = !on_animation;
-
-	if ((uChKeyPressed == 'n') && !on_animation)
-	{
-		animation_time += bvh->GetInterval();
-		frame_no++;
-		frame_no = frame_no % bvh->GetNumFrame();
+	if ((uChKeyPressed == 'n') && !gOnAnimation) {
+		gFAnimationTime += gPtrBvh->GetInterval();
+		gFrameNo++;
+		gFrameNo = gFrameNo % gPtrBvh->GetNumFrame();
 	}
 
-	if ((uChKeyPressed == 'p') && !on_animation && (frame_no > 0) && bvh)
-	{
-		animation_time -= bvh->GetInterval();
-		frame_no--;
-		frame_no = frame_no % bvh->GetNumFrame();
+	if ((uChKeyPressed == 'p') && !gOnAnimation && (gFrameNo > 0) && gPtrBvh) {
+		gFAnimationTime -= gPtrBvh->GetInterval();
+		gFrameNo--;
+		gFrameNo = gFrameNo % gPtrBvh->GetNumFrame();
 	}
-
-	if (uChKeyPressed == 'r')
-	{
-		animation_time = 0.0f;
-		frame_no = 0;
-	}
-
-	if (uChKeyPressed == 'l')
-	{
-		const int  file_name_len = 256;
-		//char  file_name[ file_name_len ] = "";
-		TCHAR  file_name[file_name_len] = L"";
-
-		OPENFILENAME	open_file;
-		memset(&open_file, 0, sizeof(OPENFILENAME));
-		open_file.lStructSize = sizeof(OPENFILENAME);
-		open_file.hwndOwner = NULL;
-		open_file.lpstrFilter = L"BVH Motion Data (*.bvh)\0*.bvh\0All (*.*)\0*.*\0";
-		open_file.nFilterIndex = 1;
-		open_file.lpstrFile = file_name;
-		open_file.nMaxFile = file_name_len;
-		open_file.lpstrTitle = L"Select a BVH file";
-		open_file.lpstrDefExt = L"bvh";
-		open_file.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
-
-		BOOL  ret = GetOpenFileName(&open_file);
-
-		if (ret)
-		{
-			if (bvh)
-				delete  bvh;
-
-
-			// wchar -> char 변환
-			int len = 256;
-			char str[256];
-
-			WideCharToMultiByte(CP_ACP, 0, file_name, len, str, len, NULL, NULL);
-
-			//bvh = new BVH( file_name );
-			bvh = new BVH(str);
-
-			if (!bvh->IsLoadSuccess())
-			{
-				delete  bvh;
-				bvh = NULL;
-			}
-
-			animation_time = 0.0f;
-			frame_no = 0;
-		}
-	}
-
-
+	
 	switch (uChKeyPressed) {
 	case 'U': case 'u':
-		musicPlayer->increaseVolume(true);
+		gPtrMusicPlayer->increaseVolume(true);
 		break;
 	case 'D': case'd':
-		musicPlayer->increaseVolume(false);
+		gPtrMusicPlayer->increaseVolume(false);
 		break;
 	case 'Q': case 'q':
-		delete(musicPlayer);
+		delete(gPtrMusicPlayer);
+		delete(gPtrBvh);
 		exit(EXIT_SUCCESS);
+		break;
+	case 'R': case 'r':
+		gFAnimationTime = 0.0f;
+		gFrameNo = 0;
+		break;
+	case 'S': case 's':
+		gOnAnimation = !gOnAnimation;
 		break;
 	case VK_SPACE:
 		if (triggerCnt < NUM_OF_TRIGGER) {
@@ -374,16 +343,6 @@ void keyboardFunc(unsigned char uChKeyPressed, int x, int y) {
 	glutPostRedisplay();
 }
 
-void renderBitmapCharacter(float x, float y, float z, void *font, char* strDisplay) {
-	char strOutput[128] = { '\0', };
-	int i = 0;
-
-	strcpy_s(strOutput, strDisplay);
-	glRasterPos3f(x, y, z);
-	for (i = 0; strOutput[i] != '\0'; i++)
-		glutBitmapCharacter(font, strOutput[i]);
-}
-
 int calculateBPM(DWORD triggerTime[]) {
 	int	timeInterval = 0;
 	int BPM = 0;
@@ -399,22 +358,20 @@ int calculateBPM(DWORD triggerTime[]) {
 	return BPM;
 }
 
-void  initEnvironment(void)
-{
+void  initEnvironment(void) {
 	float  light0_position[] = { 10.0, 10.0, 10.0, 1.0 };
 	float  light0_diffuse[] = { 0.8, 0.8, 0.8, 1.0 };
 	float  light0_specular[] = { 1.0, 1.0, 1.0, 1.0 };
 	float  light0_ambient[] = { 0.1, 0.1, 0.1, 1.0 };
+	
 	glLightfv(GL_LIGHT0, GL_POSITION, light0_position);
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, light0_diffuse);
 	glLightfv(GL_LIGHT0, GL_SPECULAR, light0_specular);
 	glLightfv(GL_LIGHT0, GL_AMBIENT, light0_ambient);
+	
 	glEnable(GL_LIGHT0);
-
 	glEnable(GL_LIGHTING);
-
 	glEnable(GL_COLOR_MATERIAL);
-
 	glEnable(GL_DEPTH_TEST);
 
 	glCullFace(GL_BACK);
@@ -422,12 +379,15 @@ void  initEnvironment(void)
 
 	glClearColor(0.5, 0.5, 0.8, 0.0);
 
-	//	bvh = new BVH( "B02.bvh" );
-	bvh = new BVH("D:\\Storage\\GitHub\\BVH\\DancingBVH\\05_05.bvh");
+	gPtrBvh = new BVH("D:\\Storage\\GitHub\\BVH\\DancingBVH\\05_03.bvh");
+
+	gPtrMusicPlayer = new MusicPlayer();
+	gPtrMusicPlayer->init();
+
+	gMouseMode = SCALE;
 }
 
-void  drawMessage(int line_no, const char * message)
-{
+void  drawMessage(int line_no, const char * message) {
 	int   i;
 	if (message == NULL)
 		return;
@@ -435,7 +395,7 @@ void  drawMessage(int line_no, const char * message)
 	glMatrixMode(GL_PROJECTION);
 	glPushMatrix();
 	glLoadIdentity();
-	gluOrtho2D(0.0, win_width, win_height, 0.0);
+	gluOrtho2D(0.0, gWidth, gHeight, 0.0);
 
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
