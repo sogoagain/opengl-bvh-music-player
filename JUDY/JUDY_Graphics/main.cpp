@@ -196,7 +196,7 @@ void displayFunc(void) {
 	float  light0_position[] = { 10.0, 10.0, 10.0, 1.0 };
 	//float	light_color[] = { 0.5, 0.5, 0.5 };
 	//glLightModelfv(GL_LIGHT_MODEL_AMBIENT, light_color);
-	glLightfv(GL_LIGHT0, GL_POSITION, light0_position);
+	//glLightfv(GL_LIGHT0, GL_POSITION, light0_position);
 
 	// 배경
 	float  size = 1.5f;
@@ -224,10 +224,9 @@ void displayFunc(void) {
 	
 
 	// 모델
-
 	glColor3f(1.0f, 0.0f, 0.0f);
 	if (gPtrBvh)
-		gPtrBvh->RenderFigure(gFrameNo, 0.04f);
+		gPtrBvh->RenderFigure(gFrameNo, 0.1f);
 
 
 	// 문자열
@@ -376,10 +375,10 @@ void  initEnvironment(void) {
 
 	glCullFace(GL_BACK);
 	glEnable(GL_CULL_FACE);
-
+	
 	glClearColor(0.5, 0.5, 0.8, 0.0);
 
-	gPtrBvh = new BVH("D:\\Storage\\GitHub\\BVH\\DancingBVH\\05_03.bvh");
+	gPtrBvh = new BVH(".\\BVH\\10.bvh");
 
 	gPtrMusicPlayer = new MusicPlayer();
 	gPtrMusicPlayer->init();

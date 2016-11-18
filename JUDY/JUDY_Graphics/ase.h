@@ -156,6 +156,7 @@ public:
 		}
 		fclose(fp);
 	}
+
 	void drawMesh(float size) {
 		glBegin(GL_TRIANGLES);
 		for (int i = 0; i < this->faceNum; i++) {
