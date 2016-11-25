@@ -87,5 +87,4 @@ public:
 public:
 	void  RenderFigure(int frame_no, float scale = 1.0f);
 	/*static*/ void  RenderFigure(const Joint * root, const double * data, float scale = 1.0f);
-	/*static*/ void  RenderBone(float x0, float y0, float z0, float x1, float y1, float z1);
 };

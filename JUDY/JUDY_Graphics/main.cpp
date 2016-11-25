@@ -5,9 +5,11 @@
 #include <gl/glut.h>
 #include "MusicPlayer.h"
 #include "BVH.h"
+#include "drawStage.h"
 
 #define EXIT_SUCCESS 0
 #define NUM_OF_TRIGGER 4
+#define NUM_OF_STAGE 4
 
 using namespace FMOD;
 
@@ -21,10 +23,19 @@ enum MenuItem {
 	NO_ACTION
 };
 
+enum MusicStage {
+	CLASSIC,
+	DANCE,
+	EDM,
+	OTHER_STAGES,
+	INTRO
+};
+
 MusicPlayer		*gPtrMusicPlayer;
 int				gWidth = 640, gHeight = 640;
 int				gMenuChoice;
 int				gBPM = 100;
+int				gStage = INTRO;
 
 /*************BVH °ü·Ã º¯¼ö****************/
 static float	gFCameraYaw = 0.0f;
@@ -40,7 +51,7 @@ bool			gOnAnimation = true;
 float			gFAnimationTime = 0.0f;
 int				gFrameNo = 0;
 
-BVH				*gPtrBvh = NULL;
+BVH				*gPtrBvh[4] = { NULL, };
 /****************************************/
 
 /*ÄÝ¹éÇÔ¼ö*/
@@ -60,7 +71,8 @@ void mouseMotionFunc(int, int);
 void keyboardFunc(unsigned char, int, int);
 /*********/
 
-int	 calculateBPM(DWORD triggerTime[]);
+int	calculateBPM(DWORD triggerTime[]);
+int getStage(char* );
 void initEnvironment(void);
 void drawMessage(int, const char*);
 
@@ -92,7 +104,8 @@ int main(int argc, char* argv[]) {
 	glutMainLoop();
 
 	delete(gPtrMusicPlayer);
-	delete(gPtrBvh);
+	for(int i = 0; i<NUM_OF_STAGE; i++)
+		delete(gPtrBvh[i]);
 	return EXIT_SUCCESS;
 }
 
@@ -111,12 +124,12 @@ void idleFunc(void) {
 #else
 		gFAnimationTime += 0.03f;
 #endif
-		if (gPtrBvh) {
-			gFrameNo = gFAnimationTime / gPtrBvh->GetInterval();
-			gFrameNo = gFrameNo % gPtrBvh->GetNumFrame();
-		}
-		else
-			gFrameNo = 0;
+			if (gPtrBvh[gStage]) {
+				gFrameNo = gFAnimationTime / gPtrBvh[gStage]->GetInterval();
+				gFrameNo = gFrameNo % gPtrBvh[gStage]->GetNumFrame();
+			}
+			else
+				gFrameNo = 0;
 
 		glutPostRedisplay();
 	}
@@ -141,7 +154,8 @@ void selectMainMenu(int entryID) {
 	switch (entryID) {
 	case EXIT:
 		delete(gPtrMusicPlayer);
-		delete(gPtrBvh);
+		for (int i = 0; i<NUM_OF_STAGE; i++)
+			delete(gPtrBvh[i]);
 		exit(EXIT_SUCCESS);
 		break;
 	default:
@@ -152,7 +166,10 @@ void selectMainMenu(int entryID) {
 void selectMusicMenu(int entryID) {
 	switch (entryID) {
 	case OPEN_MUSIC_FILE:
-		gPtrMusicPlayer->openMusic();
+		if (gPtrMusicPlayer->openMusic()) {
+			gStage = getStage(gPtrMusicPlayer->getGenre());
+			printf("STAGE_INDEX: %d\n", gStage);
+		}
 		break;
 	case PAUSE_MUSIC:
 		gPtrMusicPlayer->pausedMusic();
@@ -162,7 +179,8 @@ void selectMusicMenu(int entryID) {
 		break;
 	case EXIT:
 		delete(gPtrMusicPlayer);
-		delete(gPtrBvh);
+		for (int i = 0; i<NUM_OF_STAGE; i++)
+			delete(gPtrBvh[i]);
 		exit(EXIT_SUCCESS);
 		break;
 	default:
@@ -196,37 +214,39 @@ void displayFunc(void) {
 	float  light0_position[] = { 10.0, 10.0, 10.0, 1.0 };
 	//float	light_color[] = { 0.5, 0.5, 0.5 };
 	//glLightModelfv(GL_LIGHT_MODEL_AMBIENT, light_color);
-	//glLightfv(GL_LIGHT0, GL_POSITION, light0_position);
+	//glLightfv(GL_LIGHT0, GL_POSITION, light0_position);	
 
-	// ¹è°æ
-	float  size = 1.5f;
-	int  num_x = 10, num_z = 10;
-	double  ox, oz;
-	glBegin(GL_QUADS);
-	glNormal3d(0.0, 1.0, 0.0);
-	ox = -(num_x * size) / 2;
-	for (int x = 0; x < num_x; x++, ox += size)
-	{
-		oz = -(num_z * size) / 2;
-		for (int z = 0; z < num_z; z++, oz += size)
-		{
-			if (((x + z) % 2) == 0)
-				glColor3f(1.0, 1.0, 1.0);
-			else
-				glColor3f(0.8, 0.8, 0.8);
-			glVertex3d(ox, 0.0, oz);
-			glVertex3d(ox, 0.0, oz + size);
-			glVertex3d(ox + size, 0.0, oz + size);
-			glVertex3d(ox + size, 0.0, oz);
-		}
+	if (gStage == INTRO) {
+
 	}
-	glEnd();
-	
-
-	// ¸ðµ¨
-	glColor3f(1.0f, 0.0f, 0.0f);
-	if (gPtrBvh)
-		gPtrBvh->RenderFigure(gFrameNo, 0.1f);
+	else if (gStage == CLASSIC) {
+		drawFloor();
+		// ¸ðµ¨
+		glColor3f(1.0f, 0.0f, 0.0f);
+		if (gPtrBvh[CLASSIC])
+			gPtrBvh[CLASSIC]->RenderFigure(gFrameNo, 0.09f);
+	}
+	else if (gStage == DANCE) {
+		drawFloor();
+		// ¸ðµ¨
+		glColor3f(1.0f, 0.0f, 0.0f);
+		if (gPtrBvh[DANCE])
+			gPtrBvh[DANCE]->RenderFigure(gFrameNo, 0.09f);
+	}
+	else if (gStage == EDM) {
+		drawFloor();
+		// ¸ðµ¨
+		glColor3f(1.0f, 0.0f, 0.0f);
+		if (gPtrBvh[EDM])
+			gPtrBvh[EDM]->RenderFigure(gFrameNo, 0.09f);
+	}
+	else {
+		drawFloor();
+		// ¸ðµ¨
+		glColor3f(1.0f, 0.0f, 0.0f);
+		if (gPtrBvh[OTHER_STAGES])
+			gPtrBvh[OTHER_STAGES]->RenderFigure(gFrameNo, 0.09f);
+	}
 
 
 	// ¹®ÀÚ¿­
@@ -291,7 +311,7 @@ void mouseMotionFunc(int x, int y) {
 void keyboardFunc(unsigned char uChKeyPressed, int x, int y) {
 	static	int		triggerCnt = 0;
 	static	DWORD	triggerTime[NUM_OF_TRIGGER] = { 0, };
-
+/*
 	if ((uChKeyPressed == 'n') && !gOnAnimation) {
 		gFAnimationTime += gPtrBvh->GetInterval();
 		gFrameNo++;
@@ -303,7 +323,7 @@ void keyboardFunc(unsigned char uChKeyPressed, int x, int y) {
 		gFrameNo--;
 		gFrameNo = gFrameNo % gPtrBvh->GetNumFrame();
 	}
-	
+	*/
 	switch (uChKeyPressed) {
 	case 'U': case 'u':
 		gPtrMusicPlayer->increaseVolume(true);
@@ -313,7 +333,8 @@ void keyboardFunc(unsigned char uChKeyPressed, int x, int y) {
 		break;
 	case 'Q': case 'q':
 		delete(gPtrMusicPlayer);
-		delete(gPtrBvh);
+		for (int i = 0; i<NUM_OF_STAGE; i++)
+			delete(gPtrBvh[i]);
 		exit(EXIT_SUCCESS);
 		break;
 	case 'R': case 'r':
@@ -378,7 +399,10 @@ void  initEnvironment(void) {
 	
 	glClearColor(0.5, 0.5, 0.8, 0.0);
 
-	gPtrBvh = new BVH(".\\BVH\\10.bvh");
+	gPtrBvh[CLASSIC] = new BVH(".\\BVH\\03.bvh");
+	gPtrBvh[DANCE] = new BVH(".\\BVH\\02.bvh");
+	gPtrBvh[EDM] = new BVH(".\\BVH\\01.bvh");
+	gPtrBvh[OTHER_STAGES] = new BVH(".\\BVH\\07.bvh");
 
 	gPtrMusicPlayer = new MusicPlayer();
 	gPtrMusicPlayer->init();
@@ -414,4 +438,15 @@ void  drawMessage(int line_no, const char * message) {
 	glPopMatrix();
 	glMatrixMode(GL_MODELVIEW);
 	glPopMatrix();
+}
+
+int getStage(char* musicGenre) {
+	if (!strcmp(musicGenre, "Classical"))
+		return CLASSIC;
+	else if (!strcmp(musicGenre, "Dance"))
+		return DANCE;
+	else if (!strcmp(musicGenre, "Electronic"))
+		return EDM;
+
+	return OTHER_STAGES;
 }

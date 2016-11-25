@@ -41,7 +41,7 @@ public:
 	void pausedMusic(void);
 	void increaseVolume(bool);
 	char* getStrMusicState(void);
-	void openMusic(void);
+	bool openMusic(void);
 
 	char* getTitle(void);
 	char* getArtist(void);

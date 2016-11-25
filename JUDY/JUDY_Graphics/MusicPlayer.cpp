@@ -186,7 +186,7 @@ char* MusicPlayer::getStrMusicState(void) {
 	return mStrMusicState;
 }
 
-void MusicPlayer::openMusic(void) {
+bool MusicPlayer::openMusic(void) {
 	OpenFileDialog* fileDialog = new OpenFileDialog();
 	fileDialog->InitialDir = _T("C:\\Users\\");
 	fileDialog->Title = _T("Open Music File");
@@ -206,6 +206,7 @@ void MusicPlayer::openMusic(void) {
 	}
 
 	delete fileDialog;
+	return true;
 }
 
 char* MusicPlayer::getTitle(void) {
