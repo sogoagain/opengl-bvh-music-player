@@ -1,4 +1,4 @@
-#ifndef DEBUG
+ï»¿#ifndef DEBUG
 #define DEBUG
 #endif
 
@@ -34,10 +34,11 @@ enum MusicStage {
 MusicPlayer		*gPtrMusicPlayer;
 int				gWidth = 640, gHeight = 640;
 int				gMenuChoice;
-int				gBPM = 100;
+int				gTimerInterval = 40;
 int				gStage = INTRO;
+int				gLightAngle = 0;
 
-/*************BVH °ü·Ã º¯¼ö****************/
+/*************BVH ê´€ë ¨ ë³€ìˆ˜****************/
 static float	gFCameraYaw = 0.0f;
 static float	gFCameraPitch = -20.0f;
 static float	gFCameraDistance = 5.0f;
@@ -54,7 +55,7 @@ int				gFrameNo = 0;
 BVH				*gPtrBvh[4] = { NULL, };
 /****************************************/
 
-/*Äİ¹éÇÔ¼ö*/
+/*ì½œë°±í•¨ìˆ˜*/
 void selectMainMenu(int);
 void addMainMenu(void);
 void addMusicMenu(void);
@@ -65,6 +66,7 @@ void selectControlMenu(int);
 void displayFunc(void);
 void reshapeFunc(int, int);
 void idleFunc(void);
+void timerFunc(int value);
 
 void mouseClickFunc(int, int, int, int);
 void mouseMotionFunc(int, int);
@@ -72,7 +74,7 @@ void keyboardFunc(unsigned char, int, int);
 /*********/
 
 int	calculateBPM(DWORD triggerTime[]);
-int getStage(char* );
+int getStage(char*);
 void initEnvironment(void);
 void drawMessage(int, const char*);
 
@@ -89,14 +91,15 @@ int main(int argc, char* argv[]) {
 	glutKeyboardFunc(keyboardFunc);
 	glutMouseFunc(mouseClickFunc);
 	glutMotionFunc(mouseMotionFunc);
+	glutTimerFunc(gTimerInterval, timerFunc, 1);
 
 	GLint musicMenuID = glutCreateMenu(selectMusicMenu);
 	addMusicMenu();
 	GLint controlMenuID = glutCreateMenu(selectControlMenu);
 	addControlMenu();
 	GLint mainMenuID = glutCreateMenu(selectMainMenu);
-	glutAddSubMenu("À½¾Ç", musicMenuID);
-	glutAddSubMenu("È­¸éÁ¦¾î", controlMenuID);
+	glutAddSubMenu("ìŒì•…", musicMenuID);
+	glutAddSubMenu("í™”ë©´ì œì–´", controlMenuID);
 	addMainMenu();
 	glutAttachMenu(GLUT_RIGHT_BUTTON);
 
@@ -104,7 +107,7 @@ int main(int argc, char* argv[]) {
 	glutMainLoop();
 
 	delete(gPtrMusicPlayer);
-	for(int i = 0; i<NUM_OF_STAGE; i++)
+	for (int i = 0; i < NUM_OF_STAGE; i++)
 		delete(gPtrBvh[i]);
 	return EXIT_SUCCESS;
 }
@@ -124,37 +127,39 @@ void idleFunc(void) {
 #else
 		gFAnimationTime += 0.03f;
 #endif
+		if (gStage != INTRO) {
 			if (gPtrBvh[gStage]) {
 				gFrameNo = gFAnimationTime / gPtrBvh[gStage]->GetInterval();
 				gFrameNo = gFrameNo % gPtrBvh[gStage]->GetNumFrame();
 			}
 			else
 				gFrameNo = 0;
+		}
 
 		glutPostRedisplay();
 	}
 }
 
 void addMainMenu(void) {
-	glutAddMenuEntry("ÇÁ·Î±×·¥ Á¾·á", EXIT);
+	glutAddMenuEntry("í”„ë¡œê·¸ë¨ ì¢…ë£Œ", EXIT);
 }
 
 void addMusicMenu(void) {
-	glutAddMenuEntry("ÆÄÀÏ¿­±â", OPEN_MUSIC_FILE);
-	glutAddMenuEntry("ÀÏ½ÃÁ¤Áö", PAUSE_MUSIC);
-	glutAddMenuEntry("Á¤Áö/Àç»ı", STOP_MUSIC);
+	glutAddMenuEntry("íŒŒì¼ì—´ê¸°", OPEN_MUSIC_FILE);
+	glutAddMenuEntry("ì¼ì‹œì •ì§€", PAUSE_MUSIC);
+	glutAddMenuEntry("ì •ì§€/ì¬ìƒ", STOP_MUSIC);
 }
 
 void addControlMenu(void) {
-	glutAddMenuEntry("È®´ë/Ãà¼Ò", SCALE);
-	glutAddMenuEntry("È¸Àü", ROTATE);
+	glutAddMenuEntry("í™•ëŒ€/ì¶•ì†Œ", SCALE);
+	glutAddMenuEntry("íšŒì „", ROTATE);
 }
 
 void selectMainMenu(int entryID) {
 	switch (entryID) {
 	case EXIT:
 		delete(gPtrMusicPlayer);
-		for (int i = 0; i<NUM_OF_STAGE; i++)
+		for (int i = 0; i < NUM_OF_STAGE; i++)
 			delete(gPtrBvh[i]);
 		exit(EXIT_SUCCESS);
 		break;
@@ -167,6 +172,7 @@ void selectMusicMenu(int entryID) {
 	switch (entryID) {
 	case OPEN_MUSIC_FILE:
 		if (gPtrMusicPlayer->openMusic()) {
+			gTimerInterval = 40;
 			gStage = getStage(gPtrMusicPlayer->getGenre());
 			printf("STAGE_INDEX: %d\n", gStage);
 		}
@@ -179,7 +185,7 @@ void selectMusicMenu(int entryID) {
 		break;
 	case EXIT:
 		delete(gPtrMusicPlayer);
-		for (int i = 0; i<NUM_OF_STAGE; i++)
+		for (int i = 0; i < NUM_OF_STAGE; i++)
 			delete(gPtrBvh[i]);
 		exit(EXIT_SUCCESS);
 		break;
@@ -204,6 +210,14 @@ void selectControlMenu(int entryID) {
 void displayFunc(void) {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
+	GLfloat LightPosition[] = { 0.0, 10.0, 0.0, 1.0 };
+
+	glPushMatrix();
+	glRotatef(gLightAngle, 1.0, 0.0, 0.0);
+	glLightfv(GL_LIGHT0, GL_POSITION, LightPosition);
+	glPopMatrix();
+
+
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	glTranslatef(0.0, 0.0, -gFCameraDistance);
@@ -211,45 +225,50 @@ void displayFunc(void) {
 	glRotatef(-gFCameraYaw, 0.0, 1.0, 0.0);
 	glTranslatef(0.0, -0.5, 0.0);
 
-	float  light0_position[] = { 10.0, 10.0, 10.0, 1.0 };
-	//float	light_color[] = { 0.5, 0.5, 0.5 };
-	//glLightModelfv(GL_LIGHT_MODEL_AMBIENT, light_color);
-	//glLightfv(GL_LIGHT0, GL_POSITION, light0_position);	
-
 	if (gStage == INTRO) {
-
+		glDisable(GL_LIGHTING);
+		glDisable(GL_LIGHT0);
+		glEnable(GL_LIGHTING);
+		glEnable(GL_LIGHT0);
 	}
 	else if (gStage == CLASSIC) {
 		drawFloor();
-		// ¸ğµ¨
+		glDisable(GL_LIGHTING);
+		// ëª¨ë¸
 		glColor3f(1.0f, 0.0f, 0.0f);
 		if (gPtrBvh[CLASSIC])
 			gPtrBvh[CLASSIC]->RenderFigure(gFrameNo, 0.09f);
+		glEnable(GL_LIGHTING);
 	}
 	else if (gStage == DANCE) {
 		drawFloor();
-		// ¸ğµ¨
+		glDisable(GL_LIGHTING);
+		// ëª¨ë¸
 		glColor3f(1.0f, 0.0f, 0.0f);
 		if (gPtrBvh[DANCE])
 			gPtrBvh[DANCE]->RenderFigure(gFrameNo, 0.09f);
+		glEnable(GL_LIGHTING);
 	}
 	else if (gStage == EDM) {
 		drawFloor();
-		// ¸ğµ¨
+		glDisable(GL_LIGHTING);
+		// ëª¨ë¸
 		glColor3f(1.0f, 0.0f, 0.0f);
 		if (gPtrBvh[EDM])
 			gPtrBvh[EDM]->RenderFigure(gFrameNo, 0.09f);
+		glEnable(GL_LIGHTING);
 	}
 	else {
 		drawFloor();
-		// ¸ğµ¨
+		glDisable(GL_LIGHTING);
+		// ëª¨ë¸
 		glColor3f(1.0f, 0.0f, 0.0f);
 		if (gPtrBvh[OTHER_STAGES])
 			gPtrBvh[OTHER_STAGES]->RenderFigure(gFrameNo, 0.09f);
 	}
 
 
-	// ¹®ÀÚ¿­
+	// ë¬¸ìì—´
 	char  message[64];
 	if (gPtrBvh)
 		sprintf_s(message, "%.2f (%d)", gFAnimationTime, gFrameNo);
@@ -311,19 +330,7 @@ void mouseMotionFunc(int x, int y) {
 void keyboardFunc(unsigned char uChKeyPressed, int x, int y) {
 	static	int		triggerCnt = 0;
 	static	DWORD	triggerTime[NUM_OF_TRIGGER] = { 0, };
-/*
-	if ((uChKeyPressed == 'n') && !gOnAnimation) {
-		gFAnimationTime += gPtrBvh->GetInterval();
-		gFrameNo++;
-		gFrameNo = gFrameNo % gPtrBvh->GetNumFrame();
-	}
 
-	if ((uChKeyPressed == 'p') && !gOnAnimation && (gFrameNo > 0) && gPtrBvh) {
-		gFAnimationTime -= gPtrBvh->GetInterval();
-		gFrameNo--;
-		gFrameNo = gFrameNo % gPtrBvh->GetNumFrame();
-	}
-	*/
 	switch (uChKeyPressed) {
 	case 'U': case 'u':
 		gPtrMusicPlayer->increaseVolume(true);
@@ -333,7 +340,7 @@ void keyboardFunc(unsigned char uChKeyPressed, int x, int y) {
 		break;
 	case 'Q': case 'q':
 		delete(gPtrMusicPlayer);
-		for (int i = 0; i<NUM_OF_STAGE; i++)
+		for (int i = 0; i < NUM_OF_STAGE; i++)
 			delete(gPtrBvh[i]);
 		exit(EXIT_SUCCESS);
 		break;
@@ -352,7 +359,7 @@ void keyboardFunc(unsigned char uChKeyPressed, int x, int y) {
 		triggerCnt++;
 
 		if (triggerCnt == NUM_OF_TRIGGER) {
-			gBPM = calculateBPM(triggerTime);
+			gTimerInterval = calculateBPM(triggerTime);
 			triggerCnt = 0;
 		}
 		break;
@@ -372,37 +379,43 @@ int calculateBPM(DWORD triggerTime[]) {
 	timeInterval /= (NUM_OF_TRIGGER - 1);
 
 	BPM = 60 * 1000 / timeInterval;
+
+	timeInterval /= 24;
 #ifdef DEBUG
 	printf("BPM = %d\n", BPM);
+	printf("TimeInterval = %d\n", timeInterval);
 #endif
-	return BPM;
+	return timeInterval;
 }
 
 void  initEnvironment(void) {
-	float  light0_position[] = { 10.0, 10.0, 10.0, 1.0 };
-	float  light0_diffuse[] = { 0.8, 0.8, 0.8, 1.0 };
-	float  light0_specular[] = { 1.0, 1.0, 1.0, 1.0 };
-	float  light0_ambient[] = { 0.1, 0.1, 0.1, 1.0 };
-	
-	glLightfv(GL_LIGHT0, GL_POSITION, light0_position);
+
+	GLfloat light0_ambient[] = { 0.5, 0.4, 0.3, 1.0 };
+	GLfloat light0_diffuse[] = { 0.8, 0.7, 0.6, 1.0 };
+	GLfloat light0_specular[] = { 0.0, 0.0, 0.0, 0.0 };
+	GLfloat material_ambient[] = { 0.4, 0.4, 0.4, 1.0 };
+	GLfloat material_diffuse[] = { 0.9, 0.9, 0.9, 1.0 };
+	GLfloat material_specular[] = { 1.0, 1.0, 1.0, 1.0 };
+	GLfloat material_shininess[] = { 25.0 };
+
+	glShadeModel(GL_SMOOTH);
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_LIGHTING);
+	glLightfv(GL_LIGHT0, GL_AMBIENT, light0_ambient);
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, light0_diffuse);
 	glLightfv(GL_LIGHT0, GL_SPECULAR, light0_specular);
-	glLightfv(GL_LIGHT0, GL_AMBIENT, light0_ambient);
-	
 	glEnable(GL_LIGHT0);
-	glEnable(GL_LIGHTING);
 	glEnable(GL_COLOR_MATERIAL);
-	glEnable(GL_DEPTH_TEST);
 
 	glCullFace(GL_BACK);
 	glEnable(GL_CULL_FACE);
-	
-	glClearColor(0.5, 0.5, 0.8, 0.0);
 
-	gPtrBvh[CLASSIC] = new BVH(".\\BVH\\03.bvh");
-	gPtrBvh[DANCE] = new BVH(".\\BVH\\02.bvh");
-	gPtrBvh[EDM] = new BVH(".\\BVH\\01.bvh");
-	gPtrBvh[OTHER_STAGES] = new BVH(".\\BVH\\07.bvh");
+	glClearColor(0.5, 0.3, 0.8, 0.0);
+
+	gPtrBvh[CLASSIC] = new BVH(".\\BVH\\classic.bvh");
+	gPtrBvh[DANCE] = new BVH(".\\BVH\\dance.bvh");
+	gPtrBvh[EDM] = new BVH(".\\BVH\\edm.bvh");
+	gPtrBvh[OTHER_STAGES] = new BVH(".\\BVH\\other.bvh");
 
 	gPtrMusicPlayer = new MusicPlayer();
 	gPtrMusicPlayer->init();
@@ -449,4 +462,10 @@ int getStage(char* musicGenre) {
 		return EDM;
 
 	return OTHER_STAGES;
+}
+
+void timerFunc(int value) {
+	gLightAngle = (gLightAngle + 15) % 360;
+	glutTimerFunc(gTimerInterval, timerFunc, 1);
+	glutPostRedisplay();
 }
