@@ -52,7 +52,8 @@ bool			gOnAnimation = true;
 float			gFAnimationTime = 0.0f;
 int				gFrameNo = 0;
 
-BVH				*gPtrBvh[4] = { NULL, };
+BVH				*gPtrBvh[NUM_OF_STAGE] = { NULL, };
+Mesh			*gMesh[NUM_OF_STAGE] = { NULL, };
 /****************************************/
 
 /*콜백함수*/
@@ -107,8 +108,10 @@ int main(int argc, char* argv[]) {
 	glutMainLoop();
 
 	delete(gPtrMusicPlayer);
-	for (int i = 0; i < NUM_OF_STAGE; i++)
+	for (int i = 0; i < NUM_OF_STAGE; i++) {
 		delete(gPtrBvh[i]);
+		delete(gMesh[i]);
+	}
 	return EXIT_SUCCESS;
 }
 
@@ -159,8 +162,10 @@ void selectMainMenu(int entryID) {
 	switch (entryID) {
 	case EXIT:
 		delete(gPtrMusicPlayer);
-		for (int i = 0; i < NUM_OF_STAGE; i++)
+		for (int i = 0; i < NUM_OF_STAGE; i++) {
 			delete(gPtrBvh[i]);
+			delete(gMesh[i]);
+		}
 		exit(EXIT_SUCCESS);
 		break;
 	default:
@@ -185,8 +190,10 @@ void selectMusicMenu(int entryID) {
 		break;
 	case EXIT:
 		delete(gPtrMusicPlayer);
-		for (int i = 0; i < NUM_OF_STAGE; i++)
+		for (int i = 0; i < NUM_OF_STAGE; i++) {
 			delete(gPtrBvh[i]);
+			delete(gMesh[i]);
+		}
 		exit(EXIT_SUCCESS);
 		break;
 	default:
@@ -234,6 +241,16 @@ void displayFunc(void) {
 	else if (gStage == CLASSIC) {
 		drawFloor();
 		glDisable(GL_LIGHTING);
+		glPushMatrix();
+		glColor3b(155, 155, 155);
+		glTranslatef(-5.0, 0.0, -5.0);
+		gMesh[CLASSIC]->drawMesh(10);
+		glPopMatrix();
+		glPushMatrix();
+		glColor3b(155, 155, 155);
+		glTranslatef(5.0, 0.0, -5.0);
+		gMesh[CLASSIC]->drawMesh(10);
+		glPopMatrix();
 		// 모델
 		glColor3f(1.0f, 0.0f, 0.0f);
 		if (gPtrBvh[CLASSIC])
@@ -243,6 +260,16 @@ void displayFunc(void) {
 	else if (gStage == DANCE) {
 		drawFloor();
 		glDisable(GL_LIGHTING);
+		glPushMatrix();
+		glColor3b(155, 155, 155);
+		glTranslatef(-5.0, 0.0, -5.0);
+		gMesh[DANCE]->drawMesh(0.5);
+		glPopMatrix();
+		glPushMatrix();
+		glColor3b(155, 155, 155);
+		glTranslatef(5.0, 0.0, -5.0);
+		gMesh[DANCE]->drawMesh(0.5);
+		glPopMatrix();
 		// 모델
 		glColor3f(1.0f, 0.0f, 0.0f);
 		if (gPtrBvh[DANCE])
@@ -250,17 +277,35 @@ void displayFunc(void) {
 		glEnable(GL_LIGHTING);
 	}
 	else if (gStage == EDM) {
+		glPolygonMode(GL_FRONT,GL_LINE);
 		drawFloor();
+		glPushMatrix();
+		glTranslatef(0, -1.1, 0);
+		gMesh[EDM]->drawMesh(10);
+		glPopMatrix();
+
 		glDisable(GL_LIGHTING);
+
 		// 모델
 		glColor3f(1.0f, 0.0f, 0.0f);
 		if (gPtrBvh[EDM])
 			gPtrBvh[EDM]->RenderFigure(gFrameNo, 0.09f);
 		glEnable(GL_LIGHTING);
+		glPolygonMode(GL_FRONT, GL_FILL);
 	}
 	else {
 		drawFloor();
 		glDisable(GL_LIGHTING);
+		glPushMatrix();
+		glColor3b(155, 155, 155);
+		glTranslatef(-5.0, 0.0, -5.0);
+		gMesh[OTHER_STAGES]->drawMesh(100);
+		glPopMatrix();
+		glPushMatrix();
+		glColor3b(155, 155, 155);
+		glTranslatef(5.0, 0.0, -5.0);
+		gMesh[OTHER_STAGES]->drawMesh(100);
+		glPopMatrix();
 		// 모델
 		glColor3f(1.0f, 0.0f, 0.0f);
 		if (gPtrBvh[OTHER_STAGES])
@@ -340,8 +385,10 @@ void keyboardFunc(unsigned char uChKeyPressed, int x, int y) {
 		break;
 	case 'Q': case 'q':
 		delete(gPtrMusicPlayer);
-		for (int i = 0; i < NUM_OF_STAGE; i++)
+		for (int i = 0; i < NUM_OF_STAGE; i++) {
 			delete(gPtrBvh[i]);
+			delete(gMesh[i]);
+		}
 		exit(EXIT_SUCCESS);
 		break;
 	case 'R': case 'r':
@@ -416,6 +463,15 @@ void  initEnvironment(void) {
 	gPtrBvh[DANCE] = new BVH(".\\BVH\\dance.bvh");
 	gPtrBvh[EDM] = new BVH(".\\BVH\\edm.bvh");
 	gPtrBvh[OTHER_STAGES] = new BVH(".\\BVH\\other.bvh");
+
+	gMesh[CLASSIC] = new Mesh();
+	gMesh[CLASSIC]->readAse(".\\ASE\\Table.ASE");
+	gMesh[DANCE] = new Mesh();
+	gMesh[DANCE]->readAse(".\\ASE\\Speaker.ASE");
+	gMesh[EDM] = new Mesh();
+	gMesh[EDM]->readAse(".\\ASE\\DanceFloor.ASE");
+	gMesh[OTHER_STAGES] = new Mesh();
+	gMesh[OTHER_STAGES]->readAse(".\\ASE\\Column.ASE");
 
 	gPtrMusicPlayer = new MusicPlayer();
 	gPtrMusicPlayer->init();
