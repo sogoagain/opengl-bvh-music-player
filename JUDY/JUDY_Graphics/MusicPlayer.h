@@ -7,6 +7,8 @@
 
 #pragma comment(lib, "fmod_vc.lib")
 
+using namespace FMOD;
+
 class MusicPlayer {
 
 private:

@@ -2,16 +2,17 @@
 #include <fstream>
 #include <string.h>
 
-char* gMeshFilePath[] = { ".\\ASE\\S_Body.ASE",
-						".\\ASE\\S_Head.ASE",
-						".\\ASE\\S_LeftArm.ASE",
-						".\\ASE\\S_LeftFoot.ASE",
-						".\\ASE\\S_LeftHand.ASE",
-						".\\ASE\\S_LeftLeg.ASE",
-						".\\ASE\\S_RightArm.ASE",
-						".\\ASE\\S_RightFoot.ASE",
-						".\\ASE\\S_RightHand.ASE",
-						".\\ASE\\S_RightLeg.ASE" };
+// 모델 파일 경로
+const char* gMeshFilePath[] = { ".\\ASE\\E_Body.ASE",
+						".\\ASE\\E_Head.ASE",
+						".\\ASE\\E_LeftArm.ASE",
+						".\\ASE\\E_LeftFoot.ASE",
+						".\\ASE\\E_LeftHand.ASE",
+						".\\ASE\\E_LeftLeg.ASE",
+						".\\ASE\\E_RightArm.ASE",
+						".\\ASE\\E_RightFoot.ASE",
+						".\\ASE\\E_RightHand.ASE",
+						".\\ASE\\E_RightLeg.ASE" };
 
 BVH::BVH() {
 	// ASE 파일로부터 모델링하는 Mesh객체 생성
@@ -26,19 +27,8 @@ BVH::BVH() {
 
 BVH::BVH(const char * bvh_file_name) {
 	for (int i = 0; i < 10; i++) {
-		mesh[i] = new Mesh();
+		mesh[i] = new Mesh(gMeshFilePath[i]);
 	}
-
-	mesh[0]->readAse(".\\ASE\\S_Body.ASE");
-	mesh[1]->readAse(".\\ASE\\S_Head.ASE");
-	mesh[2]->readAse(".\\ASE\\S_LeftArm.ASE");
-	mesh[3]->readAse(".\\ASE\\S_LeftFoot.ASE");
-	mesh[4]->readAse(".\\ASE\\S_LeftHand.ASE");
-	mesh[5]->readAse(".\\ASE\\S_LeftLeg.ASE");
-	mesh[6]->readAse(".\\ASE\\S_RightArm.ASE");
-	mesh[7]->readAse(".\\ASE\\S_RightFoot.ASE");
-	mesh[8]->readAse(".\\ASE\\S_RightHand.ASE");
-	mesh[9]->readAse(".\\ASE\\S_RightLeg.ASE");
 
 	motion = NULL;
 	Clear();

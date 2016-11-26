@@ -54,6 +54,16 @@ public:
 		wireframeColor.g = 0.0;
 		wireframeColor.b = 0.0;
 	}
+
+	Mesh(const char * file_path) {
+		vertexNum = 0;
+		faceNum = 0;
+		wireframeColor.r = 0.0;
+		wireframeColor.g = 0.0;
+		wireframeColor.b = 0.0;
+		this->readAse(file_path);
+	}
+
 	~Mesh() {
 		if (vertexNum != 0)
 			delete[] vertexList;
@@ -75,7 +85,7 @@ public:
 			delete[] normalList;
 		}
 	}
-	void readAse(char* fileName) {         // -> ASE 파일로부터 데이터를 저장하는 함수
+	void readAse(const char* fileName) {         // -> ASE 파일로부터 데이터를 저장하는 함수
 		float _x;
 		float _y;
 		float _z;
