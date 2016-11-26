@@ -3,9 +3,8 @@
 #endif
 
 #include <gl/glut.h>
-#include "MusicPlayer.h"
-#include "BVH.h"
-#include "drawStage.h"
+#include "MusicPlayer.h"	// 음악 재생을 위한 클래스, FMOD라이브러리 기반
+#include "BVH.h"			// BVH 파일 로더
 
 #define EXIT_SUCCESS 0
 #define NUM_OF_TRIGGER 4
@@ -82,6 +81,7 @@ int getStage(char*);
 void initEnvironment(void);
 void drawMessage(int, const char*);
 void shutdownEnvironment(void);
+void drawFloor(void);
 
 int main(int argc, char* argv[]) {
 	glutInit(&argc, argv);
@@ -579,4 +579,30 @@ void shutdownEnvironment(void) {
 	for (int i = 0; i < NUM_OF_STAGE / 2; i++)
 		delete(gCommonStage[i]);
 	delete(gTitleMesh);
+}
+
+void drawFloor(void) {
+	// 배경
+	float  size = 1.5f;
+	int  num_x = 10, num_z = 10;
+	double  ox, oz;
+	glBegin(GL_QUADS);
+	glNormal3d(0.0, 1.0, 0.0);
+	ox = -(num_x * size) / 2;
+	for (int x = 0; x < num_x; x++, ox += size)
+	{
+		oz = -(num_z * size) / 2;
+		for (int z = 0; z < num_z; z++, oz += size)
+		{
+			if (((x + z) % 2) == 0)
+				glColor3f(1.0, 1.0, 1.0);
+			else
+				glColor3f(0.8, 0.8, 0.8);
+			glVertex3d(ox, 0.0, oz);
+			glVertex3d(ox, 0.0, oz + size);
+			glVertex3d(ox + size, 0.0, oz + size);
+			glVertex3d(ox + size, 0.0, oz);
+		}
+	}
+	glEnd();
 }
