@@ -254,7 +254,7 @@ void  BVH::RenderFigure(const Joint * joint, const double * data, float scale) {
 		glTranslatef(joint->offset[0] * scale, joint->offset[1] * scale, joint->offset[2] * scale);
 	}
 
-	int  i, j;
+	int  i;
 
 	for (i = 0; i < joint->channels.size(); i++) {
 		Channel *  channel = joint->channels[i];

@@ -203,10 +203,13 @@ bool MusicPlayer::openMusic(void) {
 		this->setVolume();
 		this->getStrMusicState();
 		this->readMusicTag();
+
+		delete fileDialog;
+		return true;
 	}
 
 	delete fileDialog;
-	return true;
+	return false;
 }
 
 char* MusicPlayer::getTitle(void) {

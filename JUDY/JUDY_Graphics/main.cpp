@@ -69,12 +69,15 @@ static int		gDragMouseR = 0;
 static int		gDragMouseL = 0;
 static int		gMouseX, gMouseY;
 
+// 키보드 이벤트 관련 변수
+static	int		gTriggerCnt = 0;	// BPM 측정 카운트
+
 // 애니메이션 관련 변수
 static bool		gOnAnimation = true;
 static float	gFAnimationTime = 0.0f;
 static int		gFrameNo = 0;
 
-BVH				*gPtrBvh[NUM_OF_STAGE] = { NULL, };				// STAGE에 따른 모델
+BVH				*gBvh[NUM_OF_STAGE] = { NULL, };				// STAGE에 따른 모델
 Mesh			*gStageMesh[NUM_OF_STAGE] = { NULL, };			// STAGE의 소품
 Mesh			*gCommonStage[NUM_OF_STAGE / 2] = { NULL, };	// STAGE의 공통된 무대
 Mesh			*gTitleMesh = NULL;								// 프로그램 Title(JUDY)
@@ -198,11 +201,11 @@ void displayFunc(void) {
 		// 소품
 		glPushMatrix();
 		glColor3ub(102, 102, 102);
-		glTranslatef(-5.0, 0.0, -5.0);
+		glTranslatef(-5.0, -0.5, -5.0);
 		gStageMesh[CLASSIC]->drawMesh(5);
 		glPopMatrix();
 		glPushMatrix();
-		glTranslatef(5.0, 0.0, -5.0);
+		glTranslatef(5.0, -0.5, -5.0);
 		gStageMesh[CLASSIC]->drawMesh(5);
 		glPopMatrix();
 
@@ -215,8 +218,8 @@ void displayFunc(void) {
 		glPopMatrix();
 
 		// 모델
-		if (gPtrBvh[CLASSIC])
-			gPtrBvh[CLASSIC]->RenderFigure(gFrameNo, 0.09f);
+		if (gBvh[CLASSIC])
+			gBvh[CLASSIC]->RenderFigure(gFrameNo, 0.09f);
 		glEnable(GL_LIGHTING);
 	}
 
@@ -245,8 +248,8 @@ void displayFunc(void) {
 		glPopMatrix();
 
 		// 모델
-		if (gPtrBvh[DANCE])
-			gPtrBvh[DANCE]->RenderFigure(gFrameNo, 0.09f);
+		if (gBvh[DANCE])
+			gBvh[DANCE]->RenderFigure(gFrameNo, 0.09f);
 		glEnable(GL_LIGHTING);
 	}
 
@@ -279,8 +282,8 @@ void displayFunc(void) {
 
 		glDisable(GL_LIGHTING);
 		// 모델
-		if (gPtrBvh[EDM])
-			gPtrBvh[EDM]->RenderFigure(gFrameNo, 0.09f);
+		if (gBvh[EDM])
+			gBvh[EDM]->RenderFigure(gFrameNo, 0.09f);
 		glEnable(GL_LIGHTING);
 		glPolygonMode(GL_FRONT, GL_FILL);
 	}
@@ -309,27 +312,36 @@ void displayFunc(void) {
 		gCommonStage[0]->drawMesh(35);
 		glPopMatrix();
 		// 모델
-		if (gPtrBvh[OTHER_STAGES])
-			gPtrBvh[OTHER_STAGES]->RenderFigure(gFrameNo, 0.09f);
+		if (gBvh[OTHER_STAGES])
+			gBvh[OTHER_STAGES]->RenderFigure(gFrameNo, 0.09f);
 		glEnable(GL_LIGHTING);
 	}
 
 
 	// 문자열 출력
-	char  message[64];
+	char animationMsg[64];
+	char bpmMsg[16];
 
 	if (gStage != INTRO) {
-		if (gPtrBvh[gStage])
-			sprintf_s(message, "%.2f (%d)", gFAnimationTime, gFrameNo);
+		sprintf_s(bpmMsg, "%d HIT! BPM: %d",gTriggerCnt, 60 * 1000 / (gTimerInterval * 24));
+		if (gBvh[gStage])
+			sprintf_s(animationMsg, "%.2f (%d)", gFAnimationTime, gFrameNo);
 		else
-			sprintf_s(message, "JUDY can't load bvh file", gFAnimationTime, gFrameNo);
-	} else
-		sprintf_s(message, "Shall we dance?");
+			sprintf_s(animationMsg, "JUDY can't load bvh file");
+	}
+	else {
+		sprintf_s(animationMsg, "Shall we dance?");
+		sprintf_s(bpmMsg, "");
+	}
 
-	drawMessage(0, message);
-	drawMessage(1, gPtrMusicPlayer->getTitle());
-	drawMessage(2, gPtrMusicPlayer->getArtist());
-	drawMessage(3, gPtrMusicPlayer->getStrMusicState());
+	
+	drawMessage(0, animationMsg);
+	drawMessage(1, gPtrMusicPlayer->getStrMusicState());
+	drawMessage(2, gPtrMusicPlayer->getTitle());
+	drawMessage(3, gPtrMusicPlayer->getArtist());
+	drawMessage(4, gPtrMusicPlayer->getGenre());
+	drawMessage(5, bpmMsg);
+
 	glutSwapBuffers();
 	glFlush();
 }
@@ -364,9 +376,9 @@ void idleFunc(void) {
 		gFAnimationTime += 0.03f;
 #endif
 		if (gStage != INTRO) {
-			if (gPtrBvh[gStage]) {
-				gFrameNo = gFAnimationTime / gPtrBvh[gStage]->GetInterval();
-				gFrameNo = gFrameNo % gPtrBvh[gStage]->GetNumFrame();
+			if (gBvh[gStage]) {
+				gFrameNo = gFAnimationTime / gBvh[gStage]->GetInterval();
+				gFrameNo = gFrameNo % gBvh[gStage]->GetNumFrame();
 			}
 			else
 				gFrameNo = 0;
@@ -383,7 +395,8 @@ void timerFunc(int value) {
 	}
 	else {
 		// 모델이 그려지고 있을 시 조명의 회전 각도
-		gLightAngle = (gLightAngle + 15) % 360;
+		if (gOnAnimation)
+			gLightAngle = (gLightAngle + 15) % 360;
 	}
 
 	// BPM을 바탕으로 측정된 gTimerInterval을 간격으로 타이머 콜백 호출
@@ -428,7 +441,6 @@ void mouseMotionFunc(int x, int y) {
 }
 
 void keyboardFunc(unsigned char uChKeyPressed, int x, int y) {
-	static	int		triggerCnt = 0;
 	static	DWORD	triggerTime[NUM_OF_TRIGGER] = { 0, };
 
 	switch (uChKeyPressed) {
@@ -450,15 +462,17 @@ void keyboardFunc(unsigned char uChKeyPressed, int x, int y) {
 		gOnAnimation = !gOnAnimation;
 		break;
 	case VK_SPACE:			// Space키 4번 입력을 통해 BPM 계산
-		if (triggerCnt < NUM_OF_TRIGGER) {
-			triggerTime[triggerCnt] = timeGetTime();
-			printf("%d ", triggerCnt + 1);
+		if (gTriggerCnt < NUM_OF_TRIGGER) {
+			triggerTime[gTriggerCnt] = timeGetTime();
+#ifdef DEBUG
+			printf("%d ", gTriggerCnt + 1);
+#endif
 		}
-		triggerCnt++;
+		gTriggerCnt++;
 
-		if (triggerCnt == NUM_OF_TRIGGER) {
+		if (gTriggerCnt == NUM_OF_TRIGGER) {
 			gTimerInterval = calculateBPM(triggerTime);
-			triggerCnt = 0;
+			gTriggerCnt = 0;
 		}
 		break;
 	default:
@@ -495,11 +509,14 @@ void selectMainMenu(int entryID) {
 }
 
 void selectMusicMenu(int entryID) {
+	static int previousStage = INTRO;
+
 	switch (entryID) {
 	case OPEN_MUSIC_FILE:
 		if (gPtrMusicPlayer->openMusic()) {
 			gTimerInterval = 40;
 			gStage = getStage(gPtrMusicPlayer->getGenre());
+			gOnAnimation = true;
 #ifdef DEBUG
 			printf("STAGE_INDEX: %d\n", gStage);
 #endif
@@ -507,9 +524,19 @@ void selectMusicMenu(int entryID) {
 		break;
 	case PAUSE_MUSIC:
 		gPtrMusicPlayer->pausedMusic();
+		gOnAnimation = !gOnAnimation;
 		break;
 	case STOP_MUSIC:
 		gPtrMusicPlayer->stopMusic();
+		if (gStage != INTRO) {
+			previousStage = gStage;
+			gStage = INTRO;
+			gOnAnimation = false;
+		}
+		else {
+			gStage = previousStage;
+			gOnAnimation = true;
+		}
 		break;
 	case EXIT:
 		shutdownEnvironment();
@@ -544,8 +571,8 @@ int calculateBPM(DWORD triggerTime[]) {
 	BPM = 60 * 1000 / timeInterval;
 
 	timeInterval /= 24;
-	printf("BPM = %d\n", BPM);
 #ifdef DEBUG
+	printf("BPM = %d\n", BPM);
 	printf("TimeInterval = %d\n", timeInterval);
 #endif
 	return timeInterval;
@@ -621,7 +648,7 @@ void drawFloor(void) {
 void initEnvironment(void) {
 	// 모델, 소품 객체 생성
 	for (int i = 0; i < NUM_OF_STAGE; i++) {
-		gPtrBvh[i] = new BVH(bvhPath[i]);
+		gBvh[i] = new BVH(bvhPath[i]);
 		gStageMesh[i] = new Mesh(stageMeshPath[i]);
 	}
 
@@ -672,7 +699,7 @@ void shutdownEnvironment(void) {
 	// 각 객체들의 메모리 해제
 	delete(gPtrMusicPlayer);
 	for (int i = 0; i < NUM_OF_STAGE; i++) {
-		delete(gPtrBvh[i]);
+		delete(gBvh[i]);
 		delete(gStageMesh[i]);
 	}
 	for (int i = 0; i < NUM_OF_STAGE / 2; i++)
