@@ -1,5 +1,5 @@
 ﻿#ifndef DEBUG
-#define DEBUG
+// #define DEBUG
 #endif
 
 #include <gl/glut.h>
@@ -317,10 +317,14 @@ void displayFunc(void) {
 
 	// 문자열 출력
 	char  message[64];
-	if (gPtrBvh[gStage])
-		sprintf_s(message, "%.2f (%d)", gFAnimationTime, gFrameNo);
-	else
-		sprintf_s(message, "JUDY can't load bvh file", gFAnimationTime, gFrameNo);
+
+	if (gStage != INTRO) {
+		if (gPtrBvh[gStage])
+			sprintf_s(message, "%.2f (%d)", gFAnimationTime, gFrameNo);
+		else
+			sprintf_s(message, "JUDY can't load bvh file", gFAnimationTime, gFrameNo);
+	} else
+		sprintf_s(message, "Shall we dance?", gFAnimationTime, gFrameNo);
 
 	drawMessage(0, message);
 	drawMessage(1, gPtrMusicPlayer->getTitle());
