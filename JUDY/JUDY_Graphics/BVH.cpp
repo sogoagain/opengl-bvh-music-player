@@ -282,7 +282,6 @@ void  BVH::RenderFigure(const Joint * joint, const double * data, float scale) {
 			glTranslatef(0.0, 0.0, 0.5);
 			glRotatef(-30, 1, 0, 0);
 			mesh[HEAD]->drawMesh(100);
-			glColor3ub(255, 0, 0);
 		}
 	}
 	if (joint->children.size() == 1) {
@@ -290,20 +289,18 @@ void  BVH::RenderFigure(const Joint * joint, const double * data, float scale) {
 
 		if (!(child->name).compare("LeftLeg")) {
 			glPushMatrix();
-			glColor3ub(204, 000, 000);
+			glColor3ub(051, 051, 153);
 			glTranslatef(0.25, 0.2, 0.0);
 			glRotatef(25, 0, 0, 1);
 			mesh[LEFT_LEG]->drawMesh(100);
-			glColor3ub(255, 0, 0);
 			glPopMatrix();
 		}
 		if (!(child->name).compare("RightLeg")) {
 			glPushMatrix();
-			glColor3ub(204, 000, 000);
+			glColor3ub(051, 051, 153);
 			glTranslatef(-0.3, 0.2, 0.0);
 			glRotatef(-25, 0, 0, 1);
 			mesh[RIGHT_LEG]->drawMesh(100);
-			glColor3ub(255, 0, 0);
 			glPopMatrix();
 		}
 		if (!(child->name).compare("LeftHand")) {
@@ -311,7 +308,6 @@ void  BVH::RenderFigure(const Joint * joint, const double * data, float scale) {
 			glColor3ub(102, 000, 102);
 			glRotatef(90, 0, 0, 1);
 			mesh[LEFT_HAND]->drawMesh(100);
-			glColor3ub(255, 0, 0);
 			glPopMatrix();
 		}
 		if (!(child->name).compare("RightHand")) {
@@ -319,7 +315,6 @@ void  BVH::RenderFigure(const Joint * joint, const double * data, float scale) {
 			glColor3ub(102, 000, 102);
 			glRotatef(-90, 0, 0, 1);
 			mesh[RIGHT_HAND]->drawMesh(100);
-			glColor3ub(255, 0, 0);
 			glPopMatrix();
 		}
 		if (!(child->name).compare("LeftForeArm")) {
@@ -327,7 +322,6 @@ void  BVH::RenderFigure(const Joint * joint, const double * data, float scale) {
 			glColor3ub(204, 000, 204);
 			glRotatef(90, 0, 0, 1);
 			mesh[LEFT_ARM]->drawMesh(100);
-			glColor3ub(255, 0, 0);
 			glPopMatrix();
 		}
 		if (!(child->name).compare("RightForeArm")) {
@@ -335,33 +329,29 @@ void  BVH::RenderFigure(const Joint * joint, const double * data, float scale) {
 			glColor3ub(204, 000, 204);
 			glRotatef(-90, 0, 0, 1);
 			mesh[RIGHT_ARM]->drawMesh(100);
-			glColor3ub(255, 0, 0);
 			glPopMatrix();
 		}
 		if (!(child->name).compare("LeftFoot")) {
 			glPushMatrix();
-			glColor3ub(102, 000, 102);
+			glColor3ub(51, 51, 51);
 			glTranslatef(0.6, 0.0, 0.0);
 			glRotatef(25, 0, 0, 1);
 			mesh[LEFT_FOOT]->drawMesh(100);
-			glColor3ub(255, 0, 0);
 			glPopMatrix();
 		}
 		if (!(child->name).compare("RightFoot")) {
 			glPushMatrix();
-			glColor3ub(102, 000, 102);
+			glColor3ub(51, 51, 51);
 			glTranslatef(-0.6, 0.0, 0.0);
 			glRotatef(-25, 0, 0, 1);
 			mesh[RIGHT_FOOT]->drawMesh(100);
-			glColor3ub(255, 0, 0);
 			glPopMatrix();
 		}
 		if (!(child->name).compare("Spine")) {
 			glPushMatrix();
-			glColor3ub(255, 255, 0);
+			glColor3ub(204, 204, 051);
 			glTranslatef(0.0, -0.2, 0.0);
 			mesh[BODY]->drawMesh(100);
-			glColor3ub(255, 0, 0);
 			glPopMatrix();
 		}
 

@@ -37,6 +37,7 @@ int				gMenuChoice;
 int				gTimerInterval = 40;
 int				gStage = INTRO;
 int				gLightAngle = 0;
+int				gTitleAngle = 0;
 
 /*************BVH 관련 변수****************/
 static float	gFCameraYaw = 0.0f;
@@ -53,7 +54,9 @@ float			gFAnimationTime = 0.0f;
 int				gFrameNo = 0;
 
 BVH				*gPtrBvh[NUM_OF_STAGE] = { NULL, };
-Mesh			*gMesh[NUM_OF_STAGE] = { NULL, };
+Mesh			*gStageMesh[NUM_OF_STAGE] = { NULL, };
+Mesh			*gCommonStage[NUM_OF_STAGE / 2] = { NULL, };
+Mesh			*gTitleMesh = NULL;
 /****************************************/
 
 /*콜백함수*/
@@ -78,6 +81,7 @@ int	calculateBPM(DWORD triggerTime[]);
 int getStage(char*);
 void initEnvironment(void);
 void drawMessage(int, const char*);
+void shutdownEnvironment(void);
 
 int main(int argc, char* argv[]) {
 	glutInit(&argc, argv);
@@ -107,11 +111,8 @@ int main(int argc, char* argv[]) {
 	initEnvironment();
 	glutMainLoop();
 
-	delete(gPtrMusicPlayer);
-	for (int i = 0; i < NUM_OF_STAGE; i++) {
-		delete(gPtrBvh[i]);
-		delete(gMesh[i]);
-	}
+	shutdownEnvironment();
+
 	return EXIT_SUCCESS;
 }
 
@@ -161,11 +162,7 @@ void addControlMenu(void) {
 void selectMainMenu(int entryID) {
 	switch (entryID) {
 	case EXIT:
-		delete(gPtrMusicPlayer);
-		for (int i = 0; i < NUM_OF_STAGE; i++) {
-			delete(gPtrBvh[i]);
-			delete(gMesh[i]);
-		}
+		shutdownEnvironment();
 		exit(EXIT_SUCCESS);
 		break;
 	default:
@@ -179,7 +176,9 @@ void selectMusicMenu(int entryID) {
 		if (gPtrMusicPlayer->openMusic()) {
 			gTimerInterval = 40;
 			gStage = getStage(gPtrMusicPlayer->getGenre());
+#ifdef DEBUG
 			printf("STAGE_INDEX: %d\n", gStage);
+#endif
 		}
 		break;
 	case PAUSE_MUSIC:
@@ -189,11 +188,7 @@ void selectMusicMenu(int entryID) {
 		gPtrMusicPlayer->stopMusic();
 		break;
 	case EXIT:
-		delete(gPtrMusicPlayer);
-		for (int i = 0; i < NUM_OF_STAGE; i++) {
-			delete(gPtrBvh[i]);
-			delete(gMesh[i]);
-		}
+		shutdownEnvironment();
 		exit(EXIT_SUCCESS);
 		break;
 	default:
@@ -217,13 +212,12 @@ void selectControlMenu(int entryID) {
 void displayFunc(void) {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-	GLfloat LightPosition[] = { 0.0, 10.0, 0.0, 1.0 };
+	GLfloat light0_position[] = { 0.0, 10.0, 0.0, 1.0 };
 
 	glPushMatrix();
 	glRotatef(gLightAngle, 1.0, 0.0, 0.0);
-	glLightfv(GL_LIGHT0, GL_POSITION, LightPosition);
+	glLightfv(GL_LIGHT0, GL_POSITION, light0_position);
 	glPopMatrix();
-
 
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
@@ -233,61 +227,92 @@ void displayFunc(void) {
 	glTranslatef(0.0, -0.5, 0.0);
 
 	if (gStage == INTRO) {
-		glDisable(GL_LIGHTING);
-		glDisable(GL_LIGHT0);
-		glEnable(GL_LIGHTING);
-		glEnable(GL_LIGHT0);
+		glPushMatrix();
+		glColor3ub(255, 255, 0);
+		glTranslatef(0, 1, 0);
+		glRotatef(gTitleAngle, 0, 1, 0);
+		gTitleMesh->drawMesh(100);
+		glColor3ub(255, 0, 0);
+		glPopMatrix();
+
+		drawMessage(20, "********************INSTRUCTIONS********************");
+		drawMessage(22, "Menu: Right-click");
+		drawMessage(24, "Volume UP/DOWN: U, D");
+		drawMessage(26, "Stop Animation: S");
+		drawMessage(28, "Restart Animation: R");
+		drawMessage(30, "BPM calculation : enter the space bar 4 times according to the beat");
+		drawMessage(32, "************************************************************");
 	}
 	else if (gStage == CLASSIC) {
 		drawFloor();
+
+		glPushMatrix();
+		glColor3ub(102, 102, 102);
+		glTranslatef(-5.0, 0.0, -5.0);
+		gStageMesh[CLASSIC]->drawMesh(5);
+		glPopMatrix();
+		glPushMatrix();
+		glTranslatef(5.0, 0.0, -5.0);
+		gStageMesh[CLASSIC]->drawMesh(5);
+		glPopMatrix();
+
 		glDisable(GL_LIGHTING);
 		glPushMatrix();
-		glColor3b(155, 155, 155);
-		glTranslatef(-5.0, 0.0, -5.0);
-		gMesh[CLASSIC]->drawMesh(10);
-		glPopMatrix();
-		glPushMatrix();
-		glColor3b(155, 155, 155);
-		glTranslatef(5.0, 0.0, -5.0);
-		gMesh[CLASSIC]->drawMesh(10);
+		glColor3ub(102, 051, 051);
+		glTranslatef(0, -0.2, 0);
+		gCommonStage[0]->drawMesh(35);
 		glPopMatrix();
 		// 모델
-		glColor3f(1.0f, 0.0f, 0.0f);
 		if (gPtrBvh[CLASSIC])
 			gPtrBvh[CLASSIC]->RenderFigure(gFrameNo, 0.09f);
 		glEnable(GL_LIGHTING);
 	}
 	else if (gStage == DANCE) {
 		drawFloor();
+
+		glPushMatrix();
+		glColor3ub(255, 000, 000);
+		glTranslatef(-5.0, 0.0, -5.0);
+		gStageMesh[DANCE]->drawMesh(13);
+		glPopMatrix();
+		glPushMatrix();
+		glTranslatef(5.0, 0.0, -5.0);
+		gStageMesh[DANCE]->drawMesh(13);
+		glPopMatrix();
+
 		glDisable(GL_LIGHTING);
 		glPushMatrix();
-		glColor3b(155, 155, 155);
-		glTranslatef(-5.0, 0.0, -5.0);
-		gMesh[DANCE]->drawMesh(0.5);
-		glPopMatrix();
-		glPushMatrix();
-		glColor3b(155, 155, 155);
-		glTranslatef(5.0, 0.0, -5.0);
-		gMesh[DANCE]->drawMesh(0.5);
+		glColor3ub(000, 000, 153);
+		glTranslatef(0, -1.1, 0);
+		gCommonStage[1]->drawMesh(10);
 		glPopMatrix();
 		// 모델
-		glColor3f(1.0f, 0.0f, 0.0f);
 		if (gPtrBvh[DANCE])
 			gPtrBvh[DANCE]->RenderFigure(gFrameNo, 0.09f);
 		glEnable(GL_LIGHTING);
 	}
 	else if (gStage == EDM) {
-		glPolygonMode(GL_FRONT,GL_LINE);
+		glPolygonMode(GL_FRONT, GL_LINE);
 		drawFloor();
 		glPushMatrix();
+		glColor3ub(051, 051, 051);
 		glTranslatef(0, -1.1, 0);
-		gMesh[EDM]->drawMesh(10);
+		gCommonStage[1]->drawMesh(10);
+		glColor3ub(255, 0, 0);
+		glPopMatrix();
+
+		glPushMatrix();
+		glColor3ub(255, 000, 000);
+		glTranslatef(-5.0, 0.0, -5.0);
+		gStageMesh[EDM]->drawMesh(0.3);
+		glPopMatrix();
+		glPushMatrix();
+		glTranslatef(5.0, 0.0, -5.0);
+		gStageMesh[EDM]->drawMesh(0.3);
 		glPopMatrix();
 
 		glDisable(GL_LIGHTING);
-
 		// 모델
-		glColor3f(1.0f, 0.0f, 0.0f);
 		if (gPtrBvh[EDM])
 			gPtrBvh[EDM]->RenderFigure(gFrameNo, 0.09f);
 		glEnable(GL_LIGHTING);
@@ -295,21 +320,27 @@ void displayFunc(void) {
 	}
 	else {
 		drawFloor();
+
+		glPushMatrix();
+		glColor3ub(102, 102, 102);
+		glTranslatef(-5.0, 0.0, -5.0);
+		gStageMesh[OTHER_STAGES]->drawMesh(80);
+		glPopMatrix();
+		glPushMatrix();
+		glTranslatef(5.0, 0.0, -5.0);
+		gStageMesh[OTHER_STAGES]->drawMesh(80);
+		glPopMatrix();
+
 		glDisable(GL_LIGHTING);
 		glPushMatrix();
-		glColor3b(155, 155, 155);
-		glTranslatef(-5.0, 0.0, -5.0);
-		gMesh[OTHER_STAGES]->drawMesh(100);
-		glPopMatrix();
-		glPushMatrix();
-		glColor3b(155, 155, 155);
-		glTranslatef(5.0, 0.0, -5.0);
-		gMesh[OTHER_STAGES]->drawMesh(100);
+		glColor3ub(102, 051, 051);
+		glTranslatef(0, -0.2, 0);
+		gCommonStage[0]->drawMesh(35);
 		glPopMatrix();
 		// 모델
-		glColor3f(1.0f, 0.0f, 0.0f);
 		if (gPtrBvh[OTHER_STAGES])
 			gPtrBvh[OTHER_STAGES]->RenderFigure(gFrameNo, 0.09f);
+		glEnable(GL_LIGHTING);
 	}
 
 
@@ -384,11 +415,7 @@ void keyboardFunc(unsigned char uChKeyPressed, int x, int y) {
 		gPtrMusicPlayer->increaseVolume(false);
 		break;
 	case 'Q': case 'q':
-		delete(gPtrMusicPlayer);
-		for (int i = 0; i < NUM_OF_STAGE; i++) {
-			delete(gPtrBvh[i]);
-			delete(gMesh[i]);
-		}
+		shutdownEnvironment();
 		exit(EXIT_SUCCESS);
 		break;
 	case 'R': case 'r':
@@ -428,8 +455,8 @@ int calculateBPM(DWORD triggerTime[]) {
 	BPM = 60 * 1000 / timeInterval;
 
 	timeInterval /= 24;
-#ifdef DEBUG
 	printf("BPM = %d\n", BPM);
+#ifdef DEBUG
 	printf("TimeInterval = %d\n", timeInterval);
 #endif
 	return timeInterval;
@@ -440,38 +467,50 @@ void  initEnvironment(void) {
 	GLfloat light0_ambient[] = { 0.5, 0.4, 0.3, 1.0 };
 	GLfloat light0_diffuse[] = { 0.8, 0.7, 0.6, 1.0 };
 	GLfloat light0_specular[] = { 0.0, 0.0, 0.0, 0.0 };
+
 	GLfloat material_ambient[] = { 0.4, 0.4, 0.4, 1.0 };
 	GLfloat material_diffuse[] = { 0.9, 0.9, 0.9, 1.0 };
 	GLfloat material_specular[] = { 1.0, 1.0, 1.0, 1.0 };
 	GLfloat material_shininess[] = { 25.0 };
 
-	glShadeModel(GL_SMOOTH);
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_LIGHTING);
-	glLightfv(GL_LIGHT0, GL_AMBIENT, light0_ambient);
-	glLightfv(GL_LIGHT0, GL_DIFFUSE, light0_diffuse);
-	glLightfv(GL_LIGHT0, GL_SPECULAR, light0_specular);
-	glEnable(GL_LIGHT0);
+	glShadeModel(GL_SMOOTH);	// 구로 셰이딩
+	glEnable(GL_DEPTH_TEST);	// 깊이 버퍼 활성화
+	glEnable(GL_LIGHTING);		// 조명 활성화
+
 	glEnable(GL_COLOR_MATERIAL);
 
 	glCullFace(GL_BACK);
 	glEnable(GL_CULL_FACE);
 
-	glClearColor(0.5, 0.3, 0.8, 0.0);
+	glEnable(GL_LIGHT0);
+	glLightfv(GL_LIGHT0, GL_AMBIENT, light0_ambient);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, light0_diffuse);
+	glLightfv(GL_LIGHT0, GL_SPECULAR, light0_specular);
+
+	glClearColor(0.6, 0.6, 1.0, 0.0);
 
 	gPtrBvh[CLASSIC] = new BVH(".\\BVH\\classic.bvh");
 	gPtrBvh[DANCE] = new BVH(".\\BVH\\dance.bvh");
 	gPtrBvh[EDM] = new BVH(".\\BVH\\edm.bvh");
 	gPtrBvh[OTHER_STAGES] = new BVH(".\\BVH\\other.bvh");
 
-	gMesh[CLASSIC] = new Mesh();
-	gMesh[CLASSIC]->readAse(".\\ASE\\Table.ASE");
-	gMesh[DANCE] = new Mesh();
-	gMesh[DANCE]->readAse(".\\ASE\\Speaker.ASE");
-	gMesh[EDM] = new Mesh();
-	gMesh[EDM]->readAse(".\\ASE\\DanceFloor.ASE");
-	gMesh[OTHER_STAGES] = new Mesh();
-	gMesh[OTHER_STAGES]->readAse(".\\ASE\\Column.ASE");
+	gStageMesh[CLASSIC] = new Mesh();
+	gStageMesh[CLASSIC]->readAse(".\\ASE\\Table.ASE");
+	gStageMesh[DANCE] = new Mesh();
+	gStageMesh[DANCE]->readAse(".\\ASE\\Base.ASE");
+	gStageMesh[EDM] = new Mesh();
+	gStageMesh[EDM]->readAse(".\\ASE\\Speaker.ASE");
+	gStageMesh[OTHER_STAGES] = new Mesh();
+	gStageMesh[OTHER_STAGES]->readAse(".\\ASE\\Column.ASE");
+
+	gCommonStage[0] = new Mesh();
+	gCommonStage[0]->readAse(".\\ASE\\Stage.ASE");
+	gCommonStage[1] = new Mesh();
+	gCommonStage[1]->readAse(".\\ASE\\DanceFloor.ASE");
+
+	gTitleMesh = new Mesh();
+	gTitleMesh->readAse(".\\ASE\\JUDY.ASE");
+	gTitleMesh->setColor(0.6, 0.6, 0.0);
 
 	gPtrMusicPlayer = new MusicPlayer();
 	gPtrMusicPlayer->init();
@@ -521,7 +560,23 @@ int getStage(char* musicGenre) {
 }
 
 void timerFunc(int value) {
-	gLightAngle = (gLightAngle + 15) % 360;
+	if (gStage == INTRO) {
+		gTitleAngle = (gTitleAngle + 3) % 360;
+	}
+	else {
+		gLightAngle = (gLightAngle + 15) % 360;
+	}
 	glutTimerFunc(gTimerInterval, timerFunc, 1);
 	glutPostRedisplay();
+}
+
+void shutdownEnvironment(void) {
+	delete(gPtrMusicPlayer);
+	for (int i = 0; i < NUM_OF_STAGE; i++) {
+		delete(gPtrBvh[i]);
+		delete(gStageMesh[i]);
+	}
+	for (int i = 0; i < NUM_OF_STAGE / 2; i++)
+		delete(gCommonStage[i]);
+	delete(gTitleMesh);
 }
