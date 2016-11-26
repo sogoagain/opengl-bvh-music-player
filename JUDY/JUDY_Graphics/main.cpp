@@ -324,7 +324,7 @@ void displayFunc(void) {
 		else
 			sprintf_s(message, "JUDY can't load bvh file", gFAnimationTime, gFrameNo);
 	} else
-		sprintf_s(message, "Shall we dance?", gFAnimationTime, gFrameNo);
+		sprintf_s(message, "Shall we dance?");
 
 	drawMessage(0, message);
 	drawMessage(1, gPtrMusicPlayer->getTitle());
