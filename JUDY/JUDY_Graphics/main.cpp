@@ -408,7 +408,7 @@ void idleFunc(void) {
 void timerFunc(int value) {
 	if (gStage == INTRO) {
 		// INTRO 모드시 TITLE의 회전 각도
-		gTitleAngle = (gTitleAngle + 3) % 360;
+		gTitleAngle = (gTitleAngle + 1) % 360;
 	}
 	else {
 		// 모델이 그려지고 있을 시 조명의 회전 각도
