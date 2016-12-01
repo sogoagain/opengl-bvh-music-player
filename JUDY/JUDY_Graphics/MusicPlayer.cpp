@@ -15,10 +15,12 @@ MusicPlayer::~MusicPlayer(void) {
 	free(mStrFilePath);
 }
 
-void MusicPlayer::errorCheck(FMOD_RESULT result) {
+bool MusicPlayer::errorCheck(FMOD_RESULT result) {
 	if (result != FMOD_OK) {
 		printf("FMOD error %d - %s\n", result, FMOD_ErrorString(result));
+		return false;
 	}
+	return true;
 }
 
 void MusicPlayer::playSound(void) {
@@ -77,22 +79,46 @@ void MusicPlayer::readMusicTag(void) {
 	*/
 
 	mFmodResult = mFmodSound->getTag("TIT2", 0, &mFmodTag);
-	errorCheck(mFmodResult);
-	strcpy_s(mStrTitle, (char*)mFmodTag.data);
+	if (errorCheck(mFmodResult)) {
+		strcpy_s(mStrTitle, (char*)mFmodTag.data);
+	}
+	else {
+		char tmp[MAX_PATH];
+		strcpy(tmp, mStrFilePath);
+		char *token = strtok(tmp, "\\");
+
+		while (token != NULL)
+		{
+			printf("%s\n", token);
+			strcpy_s(mStrTitle, token);
+			token = strtok(NULL, "\\");
+		}
+	}
+
 
 	mFmodResult = mFmodSound->getTag("TPE1", 0, &mFmodTag);
-	errorCheck(mFmodResult);
-	strcpy_s(mStrArtist, (char*)mFmodTag.data);
-
+	if (errorCheck(mFmodResult)) {
+		strcpy_s(mStrArtist, (char*)mFmodTag.data);
+	}
+	else {
+		strcpy_s(mStrArtist, "");
+	}
 
 	mFmodResult = mFmodSound->getTag("TALB", 0, &mFmodTag);
-	errorCheck(mFmodResult);
-	strcpy_s(mStrAlbum, (char*)mFmodTag.data);
-
+	if (errorCheck(mFmodResult)) {
+		strcpy_s(mStrAlbum, (char*)mFmodTag.data);
+	}
+	else {
+		strcpy_s(mStrAlbum, "");
+	}
 
 	mFmodResult = mFmodSound->getTag("TCON", 0, &mFmodTag);
-	errorCheck(mFmodResult);
-	strcpy_s(mStrGenre, (char*)mFmodTag.data);
+	if (errorCheck(mFmodResult)) {
+		strcpy_s(mStrGenre, (char*)mFmodTag.data);
+	}
+	else {
+		strcpy_s(mStrGenre, "");
+	}
 
 	printf("TITLE: %s\n", mStrTitle);
 	printf("ARTIST: %s\n", mStrArtist);

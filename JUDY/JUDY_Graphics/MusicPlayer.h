@@ -27,7 +27,7 @@ private:
 	char			mStrAlbum[128];
 	char			mStrGenre[64];
 
-	void errorCheck(FMOD_RESULT result);
+	bool errorCheck(FMOD_RESULT result);
 	void playSound(void);
 	void shutdownSystem(void);
 	void setVolume(void);
