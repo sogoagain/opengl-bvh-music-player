@@ -151,9 +151,9 @@ void MusicPlayer::pausedMusic(void) {
 
 void MusicPlayer::increaseVolume(bool isIncrease) {
 	if (isIncrease)
-		mFVolume += 0.1;
+		mFVolume += 0.1f;
 	else
-		mFVolume -= 0.1;
+		mFVolume -= 0.1f;
 
 	this->setVolume();
 }

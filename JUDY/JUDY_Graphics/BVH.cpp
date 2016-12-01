@@ -43,7 +43,7 @@ BVH::~BVH() {
 }
 
 void  BVH::Clear() {
-	int  i;
+	unsigned int  i;
 	for (i = 0; i < channels.size(); i++)
 		delete  channels[i];
 	for (i = 0; i < joints.size(); i++)
@@ -171,7 +171,7 @@ void  BVH::Load(const char * bvh_file_name) {
 			token = strtok(NULL, separater);
 			joint->channels.resize(token ? atoi(token) : 0);
 
-			for (i = 0; i < joint->channels.size(); i++) {
+			for (unsigned int i = 0; i < joint->channels.size(); i++) {
 				Channel *  channel = new Channel();
 				channel->joint = joint;
 				channel->index = channels.size();
@@ -254,7 +254,7 @@ void  BVH::RenderFigure(const Joint * joint, const double * data, float scale) {
 		glTranslatef(joint->offset[0] * scale, joint->offset[1] * scale, joint->offset[2] * scale);
 	}
 
-	int  i;
+	unsigned int  i;
 
 	for (i = 0; i < joint->channels.size(); i++) {
 		Channel *  channel = joint->channels[i];
@@ -268,7 +268,7 @@ void  BVH::RenderFigure(const Joint * joint, const double * data, float scale) {
 
 	if (joint->children.size() == 0) {
 		if (!(joint->name).compare("Head")) {
-			glColor3ub(153, 153, 153);
+			glColor3ub(102, 102, 102);
 			glTranslatef(0.0, 0.0, 0.5);
 			glRotatef(-30, 1, 0, 0);
 			mesh[HEAD]->drawMesh(100);
@@ -340,7 +340,7 @@ void  BVH::RenderFigure(const Joint * joint, const double * data, float scale) {
 		if (!(child->name).compare("Spine")) {
 			glPushMatrix();
 			glColor3ub(204, 204, 051);
-			glTranslatef(0.0, -0.2, 0.0);
+			glTranslatef(0.0, 0.0, 0.0);
 			mesh[BODY]->drawMesh(100);
 			glPopMatrix();
 		}
