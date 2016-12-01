@@ -89,7 +89,6 @@ void MusicPlayer::readMusicTag(void) {
 
 		while (token != NULL)
 		{
-			printf("%s\n", token);
 			strcpy_s(mStrTitle, token);
 			token = strtok(NULL, "\\");
 		}

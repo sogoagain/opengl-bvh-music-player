@@ -21,6 +21,10 @@ enum MenuItem {
 	STOP_MUSIC,
 	SCALE,
 	ROTATE,
+	CHANGE_TO_CLASSIC,
+	CHANGE_TO_DANCE,
+	CHANGE_TO_EDM,
+	CHANGE_TO_OTHER,
 	EXIT,
 	NO_ACTION
 };
@@ -105,9 +109,11 @@ void keyboardFunc(unsigned char, int, int);
 void addMainMenu(void);
 void addMusicMenu(void);
 void addControlMenu(void);
+void addChangeStageMenu(void);
 void selectMainMenu(int);
 void selectMusicMenu(int);
 void selectControlMenu(int);
+void selectChangeStageMenu(int);
 
 int	getTimerInterval(DWORD triggerTime[]);	// 타이머 시간 간격 계산
 int getStage(char*);					// 음악 장르에 기반해 현재 STAGE 결정
@@ -140,9 +146,12 @@ int main(int argc, char* argv[]) {
 	addMusicMenu();
 	GLint controlMenuID = glutCreateMenu(selectControlMenu);
 	addControlMenu();
+	GLint changeStageMenuID = glutCreateMenu(selectChangeStageMenu);
+	addChangeStageMenu();
 	GLint mainMenuID = glutCreateMenu(selectMainMenu);
 	glutAddSubMenu("음악", musicMenuID);
 	glutAddSubMenu("화면제어", controlMenuID);
+	glutAddSubMenu("무대변경", changeStageMenuID);
 	addMainMenu();
 	glutAttachMenu(GLUT_RIGHT_BUTTON);
 
@@ -517,6 +526,13 @@ void addControlMenu(void) {
 	glutAddMenuEntry("회전", ROTATE);
 }
 
+void addChangeStageMenu(void) {
+	glutAddMenuEntry("클래식", CHANGE_TO_CLASSIC);
+	glutAddMenuEntry("댄스", CHANGE_TO_DANCE);
+	glutAddMenuEntry("일렉트로닉", CHANGE_TO_EDM);
+	glutAddMenuEntry("기타", CHANGE_TO_OTHER);
+}
+
 void selectMainMenu(int entryID) {
 	switch (entryID) {
 	case EXIT:
@@ -585,6 +601,29 @@ void selectControlMenu(int entryID) {
 	default:
 		break;
 	}
+}
+
+void selectChangeStageMenu(int entryID) {
+	if (gStage != INTRO) {
+		switch (entryID) {
+		case CHANGE_TO_CLASSIC:
+			gStage = CLASSIC;
+			break;
+		case CHANGE_TO_DANCE:
+			gStage = DANCE;
+			break;
+		case CHANGE_TO_EDM:
+			gStage = EDM;
+			break;
+		case CHANGE_TO_OTHER:
+			gStage = OTHER_STAGES;
+			break;
+		default:
+			break;
+		}
+	}
+
+	glutPostRedisplay();
 }
 
 int getTimerInterval(DWORD triggerTime[]) {
