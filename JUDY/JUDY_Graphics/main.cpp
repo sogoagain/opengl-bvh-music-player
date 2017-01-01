@@ -502,6 +502,7 @@ void keyboardFunc(unsigned char uChKeyPressed, int x, int y) {
 			gTimerInterval = getTimerInterval(triggerTime);
 			gBPM = 60 * 1000 / (gTimerInterval * 24);
 			gTriggerCnt = 0;
+			gLightAngle = 0;
 		}
 		break;
 	default:
